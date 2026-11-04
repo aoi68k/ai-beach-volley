@@ -34,4 +34,4 @@ PeerJS 1.5.5（MIT、vendor/に同梱）とPeerServer Cloudで接続し、WebRTC
 - `npm start` → http://127.0.0.1:8767
 - `npm test` → アニメーション・物理とネットワーク状態のテスト。
 - `npm ci` 後 `npm run test:browser` → Chromeを2セッション起動し、実際のPeerJS接続、担当設定、遠隔操作、同期、一時停止、切断を検証。インターネットが必要です。Chromeのパスは `playwright.config.cjs` で設定。
-- GitHub PagesのSourceをGitHub Actionsに設定すると、mainへのpushで `.github/workflows/pages.yml` がテスト・公開。公開対象はゲームHTML/JS/CSS、assets/、vendor/のみ。
+- 公開リポジトリでGitHub PagesのSourceをGitHub Actionsに設定すると、mainへのpushで `.github/workflows/pages.yml` がテスト・公開。公開対象はゲームHTML/JS/CSS、assets/、vendor/のみ。非公開リポジトリでは公開ジョブをスキップします。
