@@ -1,0 +1,11 @@
+{
+  "name": "sunset-rally",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "test": "node tests/animation.test.cjs && node tests/network.test.cjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": { "@playwright/test": "1.56.1" }
+}

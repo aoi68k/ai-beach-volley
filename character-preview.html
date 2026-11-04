@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>キャラアニメーション — SUNSET RALLY</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f8f1de;
+      color: #143b49;
+      font: 15px system-ui, sans-serif;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: auto;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 8px 0;
+      font-size: 28px;
+    }
+
+    p {
+      line-height: 1.7;
+    }
+
+    a {
+      color: #126f87;
+    }
+
+    nav {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+
+    button,
+    select {
+      font: inherit;
+      border: 1px solid #99adae;
+      border-radius: 6px;
+      padding: 9px 16px;
+      background: white;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:first-child {
+      background: #126f87;
+      color: white;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      background: #e6f0ee;
+      border-radius: 12px;
+      border: 1px solid #acc5c5;
+      image-rendering: pixelated;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #526b70;
+    }
+
+    #load-status {
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a href="index.html">← ゲームへ</a>
+    <h1>キャラアニメーション</h1>
+    <p>4人全員の走りに、選んでいただいた全身絵の12コマを採用しています。</p>
+
+    <nav>
+      <button id="play">一時停止</button>
+      <button id="step">1コマ進む</button>
+      <label>
+        再生速度
+        <select id="speed">
+          <option value=".5">0.5倍</option>
+          <option value="1" selected>1倍</option>
+          <option value="2">2倍</option>
+        </select>
+      </label>
+      <label>
+        <input id="flip" type="checkbox"> 左右反転
+      </label>
+      <label>
+        背景
+        <select id="background">
+          <option value="#e6f0ee">淡色</option>
+          <option value="#183b49">暗色</option>
+          <option value="#e9c990">砂浜色</option>
+        </select>
+      </label>
+    </nav>
+
+    <div id="load-status" role="status">画像を読み込んでいます…</div>
+    <canvas
+      id="preview"
+      width="1040"
+      height="1040"
+      aria-label="4人のキャラクターの待機、走り、アタック、ジャンプ、トス、レシーブのアニメーション比較"
+    ></canvas>
+    <p class="hint">
+      「1コマ進む」で各中間ポーズを確認できます。このページでは全コマを比較しやすいよう繰り返し再生します。ゲーム内のジャンプは実際の上昇・下降に同期し、アタックは1回ずつ再生します。
+    </p>
+
+    <script src="assets/characters/idle-alignment.js"></script>
+    <script>
+      const CHARACTER_NAMES = ['coral-male', 'coral-female', 'blue-male', 'blue-female'];
+      const CHARACTER_LABELS = ['CORAL / 男性', 'CORAL / 女性', 'BLUE / 男性', 'BLUE / 女性'];
+      const ACTION_ROWS = [
+        { label: '待機 · 6コマ', frames: 6, fps: 4 },
+        { label: '走り · 12コマ', frames: 12, fps: 24 },
+        { label: 'アタック · 6コマ', frames: 6, fps: 8 },
+        { label: 'ジャンプ · 6コマ', frames: 6, fps: 6 },
+        { label: 'トス · 既存1コマ', frames: 1, fps: 0 },
+        { label: 'レシーブ · 既存1コマ', frames: 1, fps: 0 }
+      ];
+
+      function loadImage(src) {
+        const img = new Image();
+        img.src = src;
+        return img;
+      }
+
+      const sheets = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-v3.png`));
+      const selectedRuns = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-run-selected.png`));
+      const legacy = loadImage('assets/volleyball-players-v2.png');
+
+      const canvas = document.querySelector('#preview');
+      const ctx = canvas.getContext('2d');
+      const playButton = document.querySelector('#play');
+      const stepButton = document.querySelector('#step');
+      const speedSelect = document.querySelector('#speed');
+      const flipCheckbox = document.querySelector('#flip');
+      const backgroundSelect = document.querySelector('#background');
+      const loadStatus = document.querySelector('#load-status');
+
+      let playing = true;
+      let clock = 0;
+      let last = 0;
+      let frozen = [0, 0, 0, 0];
+
+      function currentFrames() {
+        return ACTION_ROWS.slice(0, 4).map(row => Math.floor(clock * row.fps) % row.frames);
+      }
+
+      playButton.onclick = () => {
+        if (playing) frozen = currentFrames();
+        playing = !playing;
+        playButton.textContent = playing ? '一時停止' : '再生';
+      };
+
+      stepButton.onclick = () => {
+        if (playing) frozen = currentFrames();
+        playing = false;
+        playButton.textContent = '再生';
+        frozen = frozen.map((frame, i) => (frame + 1) % ACTION_ROWS[i].frames);
+      };
+
+      function drawCell(row, athleteIndex, frame, y) {
+        const isRunRow = row === 1;
+        const isAnimatedRow = row < 4;
+        const img = isRunRow ? selectedRuns[athleteIndex] : isAnimatedRow ? sheets[athleteIndex] : legacy;
+        if (!img.complete || !img.naturalWidth) return;
+
+        const column = isRunRow ? frame % 6 : isAnimatedRow ? frame : row === 4 ? 4 : 3;
+        const sourceRow = isRunRow ? Math.floor(frame / 6) : isAnimatedRow ? row : athleteIndex;
+        const cellWidth = img.naturalWidth / 6;
+        const cellHeight = img.naturalHeight / (isRunRow ? 2 : 4);
+        const x = 190 + athleteIndex * 240;
+
+        ctx.save();
+        ctx.translate(x, y + 140);
+        if (flipCheckbox.checked) ctx.scale(-1, 1);
+        ctx.drawImage(
+          img,
+          column * cellWidth,
+          sourceRow * cellHeight,
+          cellWidth,
+          cellHeight,
+          -72 + (row === 0 ? IDLE_ALIGNMENT_X[athleteIndex][frame] * 144 / 256 : 0),
+          -140,
+          144,
+          144
+        );
+        ctx.restore();
+      }
+
+      function render(now) {
+        const dt = Math.min(0.04, (now - last) / 1000 || 0);
+        last = now;
+        if (playing) clock += dt * Number(speedSelect.value);
+
+        ctx.fillStyle = backgroundSelect.value;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.imageSmoothingEnabled = false;
+
+        ctx.fillStyle = backgroundSelect.value === '#183b49' ? '#ffffff' : '#143b49';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 17px system-ui';
+        CHARACTER_LABELS.forEach((label, i) => ctx.fillText(label, 190 + i * 240, 28));
+
+        const activeFrames = currentFrames();
+        for (let row = 0; row < ACTION_ROWS.length; row++) {
+          const y = 55 + row * 160;
+          const rowInfo = ACTION_ROWS[row];
+          const frame = row < 4 ? (playing ? activeFrames[row] : frozen[row]) : 0;
+
+          ctx.font = '13px system-ui';
+          ctx.textAlign = 'left';
+          ctx.fillText(rowInfo.label, 12, y + 20);
+
+          for (let i = 0; i < CHARACTER_NAMES.length; i++) {
+            drawCell(row, i, frame, y);
+          }
+
+          ctx.textAlign = 'left';
+          ctx.fillText(`${frame + 1} / ${rowInfo.frames}`, 12, y + 45);
+        }
+
+        requestAnimationFrame(render);
+      }
+
+      Promise.all([...sheets, ...selectedRuns, legacy].map(img => img.decode()))
+        .then(() => {
+          loadStatus.textContent = '全画像を読み込みました · 4人全員の走り12コマを採用';
+        })
+        .catch(() => {
+          loadStatus.textContent = '画像の読み込みに失敗しました。assets フォルダーを確認してください。';
+        });
+
+      requestAnimationFrame(render);
+    </script>
+  </main>
+</body>
+</html>

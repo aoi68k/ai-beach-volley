@@ -1,0 +1,7 @@
+node_modules/
+tmp/
+work/
+playwright-report/
+test-results/
+.env
+.env.*

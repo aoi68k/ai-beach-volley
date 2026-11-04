@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SUNSET RALLY — Beach Volleyball</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <a class="brand" href="./">SR<span>BEACH CLUB / 01</span></a>
+      <span class="tag">2 ON 2 · ENDLESS SUMMER</span>
+      <button id="sound">SOUND OFF</button>
+    </header>
+
+    <section class="intro">
+      <div>
+        <p class="eyebrow">SAND, SUN &amp; ONE MORE RALLY</p>
+        <h1>SUNSET <em>RALLY</em><span>ビーチで、もう一球。</span></h1>
+      </div>
+      <p class="description">
+        ルールはひとつ。相手の砂浜に落とすこと。<br>
+        何度つないでもいい、自由な2対2ビーチバレー。
+      </p>
+    </section>
+
+    <section class="arena">
+      <div class="arena-top">
+        <span><i></i> LIVE FROM SUNSET BEACH</span>
+        <span id="status">フリープレイ / 先に11点で勝利</span>
+      </div>
+      <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
+      <div id="overlay" class="overlay">
+        <span class="eyebrow">WELCOME TO THE BEACH</span>
+        <h2>LET’S RALLY.</h2>
+        <p>キャラの操作担当を決めて、砂浜へ。</p>
+        <button id="start">PLAYER SETUP <span>↗</span></button>
+      </div>
+      <div class="arena-bottom">
+        <span>← → MOVE &nbsp; ↑ JUMP &nbsp; A SHOT &nbsp; B SET</span>
+        <span>SPACE / 一時停止 &nbsp; R / リスタート</span>
+      </div>
+    </section>
+
+    <section class="settings">
+      <div class="mode-block">
+        <p class="eyebrow">01 / MATCH MODE</p>
+        <div class="modes" id="modes"></div>
+      </div>
+      <div class="controls">
+        <p class="eyebrow">02 / HOW TO PLAY</p>
+        <p><b>A / ショット</b><span>地上：前＋Aで返球、Aのみで自陣へ。空中：アタック、後ろ＋Aでフェイント。</span></p>
+        <p><b>B / トス</b><span>自陣へトス。空中＋相手コートに球でブロック。</span></p>
+        <small>
+          空中で後ろ＋A：フェイント（左チームは左、右チームは右）。<br>
+          上・A・Bは押しっぱなしで、行動可能になり次第繰り返します。<br>
+          1P: ← → ↑ / Z・X（A・Bも可）<br>
+          2P: F H T / G・V　3P: J L I / K・M<br>
+          4P: テンキー 4 6 8 / 1・2　ゲームパッド1〜4対応（スティック／十字キー：左右で移動・上でジャンプ）
+        </small>
+      </div>
+    </section>
+
+    <footer>
+      <span>NO TOUCH LIMIT. JUST GOOD TIMES.</span>
+      <span>PROTOTYPE 01 / 特殊技は今後追加予定</span>
+    </footer>
+  </main>
+  <dialog id="lobby" aria-labelledby="lobby-title">
+    <div class="lobby-heading"><div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div><button id="close-lobby" aria-label="閉じる">✕</button></div>
+    <p>4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
+    <div class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
+    <div class="join-row"><label>部屋コード <input id="room-code" maxlength="80" placeholder="招待されたコードを入力" autocomplete="off"></label><button id="join-room">参加する</button></div>
+    <div id="room-details" hidden><label>招待リンク <input id="invite-link" readonly></label><button id="copy-invite">コピー</button><button id="leave-room">部屋を退出</button></div>
+    <p id="lobby-message" role="status" aria-live="polite">同じ端末の1P〜4P、またはCOMを割り当てます。</p>
+    <div id="player-slots" class="player-slots"></div>
+    <p id="lobby-help">同じ操作担当は1キャラまで。空いたキャラはCOMにできます。</p>
+    <button id="launch-match" class="launch-match">この担当で試合開始 ↗</button>
+    <small>オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
+  </dialog>
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="assets/characters/idle-alignment.js"></script>
+  <script src="game.js"></script>
+  <script src="lobby.js"></script>
+</body>
+</html>
