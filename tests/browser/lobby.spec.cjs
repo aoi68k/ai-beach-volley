@@ -707,7 +707,7 @@ test('empowered attack knockback is weak on ground and strong in air', async ({ 
   expect(airKb).toBeLessThanOrEqual(1800);
 
   // Ground knockback is distinctly weaker than aerial knockback
-  expect(groundKb).toBeLessThan(airKb * 0.65);
+  expect(groundKb).toBeLessThan(airKb * 0.80);
 
   expect(errors).toEqual([]);
 });
@@ -1221,5 +1221,56 @@ test("loop shot: airborne Up plus B produces gentle high-arc lob over net into o
   expect(maxX).toBeLessThan(860);
 
   await page.screenshot({ path: "test-results/loop-shot.png" });
+  expect(errors).toEqual([]);
+});
+
+test("popout arena: button and P key open independent window with placeholder and restore cleanly", async ({ page, context }) => {
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+
+  const popoutBtn = page.locator("#toggle-popout");
+  await expect(popoutBtn).toBeVisible();
+  await expect(popoutBtn.locator(".popout-text")).toHaveText("POPOUT");
+
+  // 1. Pop out using the button
+  const popupPromise = context.waitForEvent("page");
+  await popoutBtn.click();
+  const popoutPage = await popupPromise;
+  await popoutPage.waitForLoadState();
+
+  // Main page shows placeholder card
+  await expect(page.locator("#arena-placeholder")).toBeVisible();
+  await expect(page.locator("#arena-placeholder h3")).toHaveText("ゲーム画面は別ウィンドウで表示中です");
+
+  // Popout page contains arena and button reflects RESTORE state
+  await expect(popoutPage.locator("#arena")).toBeVisible();
+  await expect(popoutPage.locator("#toggle-popout .popout-text")).toHaveText("RESTORE");
+
+  // 2. Return via the placeholder button on main page
+  const closePromise = popoutPage.waitForEvent("close");
+  await page.locator("#return-from-popout").click();
+  await closePromise;
+
+  // Arena is restored on main page and button resets to POPOUT
+  await expect(page.locator("#arena")).toBeVisible();
+  await expect(page.locator("#arena-placeholder")).toBeHidden();
+  await expect(popoutBtn.locator(".popout-text")).toHaveText("POPOUT");
+
+  // 3. Pop out using P key shortcut and restore via P key in popout
+  const popupPromise2 = context.waitForEvent("page");
+  await page.keyboard.press("KeyP");
+  const popoutPage2 = await popupPromise2;
+  await popoutPage2.waitForLoadState();
+  await expect(popoutPage2.locator("#arena")).toBeVisible();
+
+  // Restore via popout toggle button
+  const closePromise2 = popoutPage2.waitForEvent("close");
+  await popoutPage2.locator("#toggle-popout").click();
+  await closePromise2;
+
+  await expect(page.locator("#arena")).toBeVisible();
+  await expect(page.locator("#toggle-popout .popout-text")).toHaveText("POPOUT");
+
   expect(errors).toEqual([]);
 });

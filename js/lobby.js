@@ -1,7 +1,13 @@
 /* Room authority stays with the host. Peers can submit only their own input. */
 (() => {
   'use strict';
-  const $ = id => document.getElementById(id);
+  const $ = id => {
+    const el = document.getElementById(id);
+    if (el) return el;
+    const popDoc = window.rallyPopout?.getPopoutDocument?.();
+    if (popDoc) return popDoc.getElementById(id);
+    return null;
+  };
   const game = window.rallyGame;
   const invited = new URL(location.href).searchParams.get('room');
   const participantView = () => !!invited || guest;

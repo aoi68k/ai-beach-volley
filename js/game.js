@@ -250,21 +250,37 @@ function syncModeButtons() {
   }
 }
 
+function getArenaElement(selector) {
+  if (typeof document === 'undefined') return null;
+  return document.querySelector(selector) ||
+    popoutWindow?.document?.querySelector(selector) ||
+    null;
+}
+
 function setOverlay(title, description, buttonText, visible = true) {
-  const overlay = document.querySelector('#overlay');
+  const overlay = getArenaElement('#overlay');
+  if (!overlay) return;
+  const doc = overlay.ownerDocument || document;
   const blueWins = winner && score[1] >= WINNING_SCORE;
   overlay.classList.toggle('is-victory', winner);
   overlay.classList.toggle('winner-blue', blueWins);
-  document.querySelector('#overlay-eyebrow').textContent = winner
+  const eyebrow = doc.querySelector('#overlay-eyebrow');
+  if (eyebrow) eyebrow.textContent = winner
     ? 'FINAL WHISTLE / MATCH COMPLETE' : 'SUNSET RALLY / WELCOME TO THE BEACH';
-  document.querySelector('#overlay-result').hidden = !winner;
-  document.querySelector('#result-coral').textContent = String(score[0]).padStart(2, '0');
-  document.querySelector('#result-blue').textContent = String(score[1]).padStart(2, '0');
+  const result = doc.querySelector('#overlay-result');
+  if (result) result.hidden = !winner;
+  const rCoral = doc.querySelector('#result-coral');
+  if (rCoral) rCoral.textContent = String(score[0]).padStart(2, '0');
+  const rBlue = doc.querySelector('#result-blue');
+  if (rBlue) rBlue.textContent = String(score[1]).padStart(2, '0');
   if (visible) overlay.classList.remove('hidden');
   else overlay.classList.add('hidden');
-  document.querySelector('#overlay h2').textContent = title;
-  document.querySelector('#overlay p').textContent = description;
-  document.querySelector('#start').firstChild.textContent = buttonText;
+  const h2 = doc.querySelector('#overlay h2');
+  if (h2) h2.textContent = title;
+  const p = doc.querySelector('#overlay p');
+  if (p) p.textContent = description;
+  const startBtn = doc.querySelector('#start');
+  if (startBtn?.firstChild) startBtn.firstChild.textContent = buttonText;
 }
 
 function createPlayer(x, index) {
@@ -299,7 +315,8 @@ function reset() {
   serveTurns = [0, 0];
   characterCheck = false;
   checkGaugeTime = 0;
-  document.querySelector('#exit-character-check').hidden = true;
+  const exitCheck = getArenaElement('#exit-character-check');
+  if (exitCheck) exitCheck.hidden = true;
   particles = [];
   specialActivation = null;
   audioEvents = [];
@@ -317,7 +334,9 @@ function reset() {
 }
 
 function status() {
-  document.querySelector('#status').textContent = paused
+  const el = getArenaElement('#status');
+  if (!el) return;
+  el.textContent = paused
     ? (window.matchLobby?.online ? 'PAUSED / ホストのSPACEで再開' : 'PAUSED / SPACEで再開')
     : characterCheck ? 'キャラ挙動チェック / 通常操作・A ショット・B トス / R でリセット'
     : serveState ? `${players[serveState.serverIndex].side ? 'BLUE' : 'CORAL'} サーブ / ${serveState.phase === 'holding' ? 'Aでトス・Bで地上サーブ' : '↑でジャンプ・Aで打つ'}`
@@ -433,6 +452,224 @@ if (typeof document !== 'undefined' && document.readyState === 'loading') {
   document.addEventListener?.('DOMContentLoaded', initFullscreenControl);
 } else {
   initFullscreenControl();
+}
+
+// --- Popout (Picture-in-Picture / Independent Window) Arena Presentation ---
+let popoutWindow = null;
+let arenaPlaceholder = null;
+
+function isPopoutActive() {
+  return Boolean(popoutWindow && !popoutWindow.closed);
+}
+
+function updatePopoutUI() {
+  const active = isPopoutActive();
+  const btns = [
+    document.querySelector?.('#toggle-popout'),
+    popoutWindow?.document?.querySelector?.('#toggle-popout')
+  ];
+  btns.forEach(btn => {
+    if (!btn) return;
+    const text = btn.querySelector?.('.popout-text');
+    if (text) text.textContent = active ? 'RESTORE' : 'POPOUT';
+    btn.setAttribute?.('aria-label', active ? '通常画面に戻す' : 'ゲーム画面をポップアウト');
+    btn.title = active ? '通常画面に戻す (P)' : 'ゲーム画面を別ウィンドウで表示 (P)';
+  });
+}
+
+function copyStylesTo(targetDoc) {
+  if (!targetDoc?.head) return;
+  const doc = typeof document !== 'undefined' ? document : null;
+  if (!doc) return;
+  Array.from(doc.styleSheets || []).forEach(sheet => {
+    try {
+      if (sheet.href) {
+        const link = targetDoc.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = sheet.href;
+        targetDoc.head.appendChild(link);
+      } else if (sheet.cssRules) {
+        const style = targetDoc.createElement('style');
+        Array.from(sheet.cssRules).forEach(rule => {
+          style.appendChild(targetDoc.createTextNode(rule.cssText));
+        });
+        targetDoc.head.appendChild(style);
+      }
+    } catch (e) {
+      if (sheet.href) {
+        const link = targetDoc.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = sheet.href;
+        targetDoc.head.appendChild(link);
+      }
+    }
+  });
+}
+
+async function requestPopoutArena() {
+  const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  if (!arena) return;
+  if (isFullscreenArena()) {
+    await exitFullscreenArena();
+  }
+  const width = 1220;
+  const height = 720;
+  let win = null;
+
+  if (typeof window !== 'undefined' && window.documentPictureInPicture?.requestWindow) {
+    try {
+      win = await window.documentPictureInPicture.requestWindow({ width, height });
+    } catch (err) {
+      // Fallback to window.open
+    }
+  }
+
+  if (!win && typeof window !== 'undefined' && window.open) {
+    try {
+      win = window.open(
+        '',
+        'SunsetRallyPopout',
+        `width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no,resizable=yes`
+      );
+    } catch (err) {
+      // Popups may be blocked
+    }
+  }
+
+  if (!win) {
+    alert('ポップアップウィンドウが開けませんでした。ブラウザのポップアップブロックをご確認ください。');
+    return;
+  }
+
+  popoutWindow = win;
+
+  try {
+    win.document.title = 'Sunset Rally - Beach Volleyball';
+    copyStylesTo(win.document);
+    win.document.body.style.cssText = 'margin:0;padding:0;background:#030d14;overflow:hidden;height:100vh;display:flex;flex-direction:column;justify-content:center;';
+  } catch (err) {}
+
+  if (!arenaPlaceholder && typeof document !== 'undefined') {
+    arenaPlaceholder = document.createElement('div');
+    arenaPlaceholder.id = 'arena-placeholder';
+    arenaPlaceholder.className = 'arena-placeholder';
+    arenaPlaceholder.innerHTML = `
+      <div class="placeholder-card">
+        <p class="eyebrow">POPOUT ACTIVE</p>
+        <h3>ゲーム画面は別ウィンドウで表示中です</h3>
+        <button id="return-from-popout" class="return-btn" type="button">ゲーム画面をここに戻す ↙</button>
+      </div>
+    `;
+    arenaPlaceholder.querySelector('#return-from-popout')?.addEventListener('click', restorePopoutArena);
+  }
+
+  if (arena.parentNode) {
+    arena.parentNode.insertBefore(arenaPlaceholder, arena);
+  }
+  arena.classList?.add('is-popout');
+  win.document.body.appendChild(arena);
+
+  const forwardKey = e => {
+    window.dispatchEvent(new KeyboardEvent(e.type, {
+      key: e.key,
+      code: e.code,
+      bubbles: true,
+      cancelable: true,
+      shiftKey: e.shiftKey,
+      ctrlKey: e.ctrlKey,
+      altKey: e.altKey,
+      metaKey: e.metaKey,
+      repeat: e.repeat
+    }));
+  };
+  win.addEventListener('keydown', forwardKey);
+  win.addEventListener('keyup', forwardKey);
+
+  win.addEventListener('blur', () => {
+    keys.clear();
+    if (running && !window.matchLobby?.online && !isAllCom()) {
+      paused = true;
+      status();
+    }
+  });
+
+  const onPopoutClose = () => {
+    restorePopoutArena();
+  };
+  win.addEventListener('pagehide', onPopoutClose);
+  win.addEventListener('unload', onPopoutClose);
+
+  updatePopoutUI();
+  updateFullscreenUI();
+
+  const canvas = arena.querySelector('canvas');
+  canvas?.focus?.();
+}
+
+function restorePopoutArena() {
+  if (!isPopoutActive() && !arenaPlaceholder?.parentNode) return;
+  const arena = document.querySelector?.('#arena') ||
+    document.querySelector?.('.arena') ||
+    popoutWindow?.document?.querySelector?.('#arena') ||
+    popoutWindow?.document?.querySelector?.('.arena');
+
+  if (arena && arenaPlaceholder?.parentNode) {
+    arena.classList?.remove('is-popout');
+    arenaPlaceholder.parentNode.replaceChild(arena, arenaPlaceholder);
+  }
+
+  if (popoutWindow && !popoutWindow.closed) {
+    try {
+      popoutWindow.close();
+    } catch (err) {}
+  }
+  popoutWindow = null;
+
+  updatePopoutUI();
+  updateFullscreenUI();
+
+  const canvas = arena?.querySelector('canvas') || document.querySelector('canvas');
+  canvas?.focus?.();
+}
+
+async function togglePopout() {
+  if (isPopoutActive()) {
+    restorePopoutArena();
+  } else {
+    await requestPopoutArena();
+  }
+}
+
+function initPopoutControl() {
+  const btn = document.querySelector?.('#toggle-popout');
+  if (btn?.addEventListener) {
+    btn.addEventListener('click', e => {
+      e?.preventDefault?.();
+      togglePopout();
+    });
+  }
+  updatePopoutUI();
+}
+
+if (typeof document !== 'undefined' && document.readyState === 'loading') {
+  document.addEventListener?.('DOMContentLoaded', initPopoutControl);
+} else {
+  initPopoutControl();
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    if (popoutWindow && !popoutWindow.closed) {
+      try { popoutWindow.close(); } catch (err) {}
+    }
+  });
+  window.rallyPopout = {
+    isPopoutActive,
+    getPopoutDocument: () => (popoutWindow && !popoutWindow.closed ? popoutWindow.document : null),
+    requestPopoutArena,
+    restorePopoutArena,
+    togglePopout
+  };
 }
 
 function startCharacterCheck() {
@@ -651,6 +888,11 @@ window.addEventListener('keydown', e => {
     toggleFullscreen();
     return;
   }
+  if (e.code === 'KeyP' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault();
+    togglePopout();
+    return;
+  }
   if (e.code === 'Escape' && isFullscreenArena()) {
     exitFullscreenArena();
   }
@@ -676,6 +918,7 @@ window.addEventListener('keydown', e => {
 window.addEventListener('keyup', e => keys.delete(e.code));
 
 window.addEventListener('blur', () => {
+  if (isPopoutActive()) return;
   keys.clear();
   if (running && !window.matchLobby?.online && !isAllCom()) {
     paused = true;
@@ -1704,7 +1947,8 @@ function updateBall(dt) {
     ball.vy = -Math.max(180, Math.min(260, Math.abs(ball.vy) * 0.5));
     ball.vx *= 0.35;
     pointEnd = { side, time: POINT_PAUSE };
-    document.querySelector('#status').textContent = `${side ? 'BLUE TIDE' : 'CORAL CLUB'} +1 / 次のラリーへ`;
+    const st = getArenaElement('#status');
+    if (st) st.textContent = `${side ? 'BLUE TIDE' : 'CORAL CLUB'} +1 / 次のラリーへ`;
   }
 }
 
@@ -3321,7 +3565,7 @@ window.rallyGame = {
         highToss: TOSS_SPEEDS.high, powerReceive: TOSS_SPEEDS.powerReceive, mozuDive: SPECIAL_RULES.mozuDiveSpeed, referenceServes, quickMax: 1350, empoweredMax: 1350 },
       knockback: { ...KNOCKBACK_RULES, empowered: SPECIAL_RULES.knockback, empoweredGround: SPECIAL_RULES.knockbackGround, impactRecovery: SPECIAL_RULES.impactRecovery } };
   },
-  start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); document.querySelector('#overlay').classList.add('hidden'); },
+  start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); getArenaElement('#overlay')?.classList.add('hidden'); },
   stop() { reset(); keys.clear(); },
   pause() { if (running) { paused = !paused; status(); } },
   syncAssignments() {
@@ -3389,11 +3633,15 @@ window.rallyGame = {
     serveState = serveTimer > 0 ? (s.serveState ?? null) : null;
     serveTurns = s.serveTurns ?? [0, 0];
     if (winner) setOverlay(score[0] >= WINNING_SCORE ? 'CORAL WINS!' : 'BLUE WINS!', 'ロビーで次の試合の担当を決めましょう。', 'LOBBY ');
-    else document.querySelector('#overlay').classList.toggle('hidden', running);
+    else getArenaElement('#overlay')?.classList.toggle('hidden', running);
     status();
   },
   toggleFullscreen,
   isFullscreen: isFullscreenArena,
   requestFullscreen: requestFullscreenArena,
-  exitFullscreen: exitFullscreenArena
+  exitFullscreen: exitFullscreenArena,
+  togglePopout,
+  isPopoutActive,
+  requestPopout: requestPopoutArena,
+  restorePopout: restorePopoutArena
 };

@@ -36,6 +36,14 @@
         <span><i></i> LIVE FROM SUNSET BEACH</span>
         <div class="arena-top-actions">
           <span id="status">先に11点で勝利</span>
+          <button id="toggle-popout" class="fullscreen-btn popout-btn" type="button" aria-label="ゲーム画面をポップアウト" title="ゲーム画面を別ウィンドウで表示 (P)">
+            <svg class="icon-popout" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            <span class="popout-text">POPOUT</span>
+          </button>
           <button id="toggle-fullscreen" class="fullscreen-btn" type="button" aria-label="フルスクリーンの切り替え" title="フルスクリーンの切り替え (F)">
             <svg class="icon-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
@@ -65,7 +73,7 @@
       </div>
       <div class="arena-bottom">
         <span>← → MOVE &nbsp; ↑ JUMP &nbsp; A SHOT &nbsp; B SET</span>
-        <span>SPACE / 一時停止 &nbsp; R / リスタート &nbsp; F / フルスクリーン</span>
+        <span>SPACE / 一時停止 &nbsp; R / リスタート &nbsp; F / フルスクリーン &nbsp; P / ポップアウト</span>
       </div>
       <dialog id="gamepad-config" aria-labelledby="gamepad-config-title">
         <div class="config-heading">
