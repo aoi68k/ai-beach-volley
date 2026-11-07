@@ -566,11 +566,19 @@ function clampCourtX(x, side, netMargin = 28, edgeMargin = 24) {
   return Math.max(minX, Math.min(maxX, x));
 }
 
+const COM_ATTACK_TAN = Math.tan(-Math.PI * 10 / 180);
+const COM_SET_TAN = Math.tan(-Math.PI * 50 / 180);
+
 // Screen Y grows downward. Aim above the net by the ball radius plus a margin.
-function comShotType(b) {
-  const angle = Math.atan2(NETTOP - b.r - 8 - b.y, Math.abs(NET - b.x));
-  if (angle < (-Math.PI * 50) / 180) return 'set';
-  return angle < (-Math.PI * 10) / 180 ? 'receive' : 'attack';
+function comShotType(bOrX, maybeY, maybeR) {
+  const x = maybeY !== undefined ? bOrX : bOrX.x;
+  const y = maybeY !== undefined ? maybeY : bOrX.y;
+  const r = maybeR !== undefined ? maybeR : bOrX.r;
+  const dx = Math.abs(NET - x);
+  const dy = NETTOP - r - 8 - y;
+  if (dy >= dx * COM_ATTACK_TAN) return 'attack';
+  if (dy >= dx * COM_SET_TAN) return 'receive';
+  return 'set';
 }
 
 // Attack: cross the near edge of the net with only a small clearance.
@@ -985,16 +993,26 @@ function comJumpPlan(p) {
   const targetHeight = isTeammateToss ? getComSpikeTargetHeight(p) : 55;
 
   let best = null;
-  for (const direction of [0, p.side ? -1 : 1, p.side ? 1 : -1]) {
+  const forward = p.side ? -1 : 1;
+  const backward = -forward;
+  const directions = [0, forward, backward];
+  const ballR = ball.r;
+  const sideSign = p.side ? 1 : -1;
+
+  for (let d = 0; d < 3; d++) {
+    const direction = directions[d];
     for (let t = 0.08; t < 0.76; t += 1 / 120) {
       const bx = ball.x + ball.vx * t;
       const by = ball.y + ball.vy * t + 0.5 * GRAVITY * t * t;
       const py = FLOOR - JUMP_SPEED * t + 0.5 * PLAYER_GRAVITY * t * t;
       const px = clampCourtX(p.x + direction * COM_SPEED * t, p.side);
-      if (py >= FLOOR - 35 || by + ball.r >= FLOOR || (bx - NET) * (p.side ? 1 : -1) < 0) continue;
-      if (comShotType({ x: bx, y: by, r: ball.r }) !== 'attack') continue;
-      const distance = Math.hypot(bx - px, by - (py - 39));
-      if (distance < 66) {
+      if (py >= FLOOR - 35 || by + ballR >= FLOOR || (bx - NET) * sideSign < 0) continue;
+      if (comShotType(bx, by, ballR) !== 'attack') continue;
+      const dx = bx - px;
+      const dy = by - (py - 39);
+      const distSq = dx * dx + dy * dy;
+      if (distSq < 4356) { // 66 * 66
+        const distance = Math.sqrt(distSq);
         let score = 200 - distance;
         if (isTeammateToss) {
           const height = FLOOR - py;
@@ -1090,7 +1108,9 @@ function decideComInput(p) {
   let comIntent;
 
   const own = ball.x < NET ? p.side === 0 : p.side === 1;
-  const teammates = players.filter(q => q.side === p.side);
+  const t0 = players[p.side * 2];
+  const t1 = players[p.side * 2 + 1];
+  const mate = p === t0 ? t1 : t0;
   // Prefer alternating touches only when the teammate can actually reach the ball.
   const assistBall =
     ball.deadened ||
@@ -1103,12 +1123,27 @@ function decideComInput(p) {
     (-ball.vy + Math.sqrt(Math.max(0, ball.vy * ball.vy + 2 * GRAVITY * (FLOOR - 65 - ball.y)))) / GRAVITY
   );
 
-  const ready = teammates.filter(q => q.recoveryFrames <= 0 && q.cooldownFrames <= 0);
-  const reachable = ready.filter(q => Math.abs(q.x - chaseX) <= 70 + (q.human ? HUMAN_SPEED : COM_SPEED) * catchTime);
-  let candidates = reachable.filter(q => q !== ball.lastHitter);
-  if (!candidates.length) candidates = reachable.length ? reachable : ready;
-  const nearest = candidates.reduce((a, b) => (!a || Math.abs(b.x - chaseX) < Math.abs(a.x - chaseX) ? b : a), null);
-  const mate = teammates.find(q => q !== p);
+  let nearest = null;
+  let nearestDist = Infinity;
+  let reachableAny = null;
+  let reachableAnyDist = Infinity;
+  let readyAny = null;
+  let readyAnyDist = Infinity;
+
+  const tList = [t0, t1];
+  for (let i = 0; i < 2; i++) {
+    const q = tList[i];
+    if (q.recoveryFrames > 0 || q.cooldownFrames > 0) continue;
+    const dist = Math.abs(q.x - chaseX);
+    if (!readyAny || dist < readyAnyDist) { readyAny = q; readyAnyDist = dist; }
+    if (dist <= 70 + (q.human ? HUMAN_SPEED : COM_SPEED) * catchTime) {
+      if (!reachableAny || dist < reachableAnyDist) { reachableAny = q; reachableAnyDist = dist; }
+      if (q !== ball.lastHitter) {
+        if (!nearest || dist < nearestDist) { nearest = q; nearestDist = dist; }
+      }
+    }
+  }
+  nearest = nearest || reachableAny || readyAny;
   let target = supportPosition(p, mate);
 
   if (own && nearest === p) {
@@ -1514,14 +1549,13 @@ function updateBall(dt) {
   }
 }
 
-function update(dt) {
-  if (paused) return;
-  updateSpecialActivation(dt);
-  time += dt;
-  shake *= 0.85;
-
-  particles = particles.filter(p => (p.life -= dt) > 0);
-  particles.forEach(p => {
+function updateParticles(dt) {
+  let write = 0;
+  const count = particles.length;
+  for (let i = 0; i < count; i++) {
+    const p = particles[i];
+    p.life -= dt;
+    if (p.life <= 0) continue;
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     if (p.kind === 'sand') {
@@ -1529,7 +1563,18 @@ function update(dt) {
       p.vy += (p.gravity ?? (p.puff ? 40 : 280)) * dt;
       if (p.y >= FLOOR) { p.y = FLOOR; p.vy = 0; p.vx *= Math.exp(-8 * dt); }
     }
-  });
+    particles[write++] = p;
+  }
+  particles.length = write;
+}
+
+function update(dt) {
+  if (paused) return;
+  updateSpecialActivation(dt);
+  time += dt;
+  shake *= 0.85;
+
+  updateParticles(dt);
 
   if (!running || winner) {
     for (const p of players) {
@@ -1709,16 +1754,17 @@ function drawPlayer(p) {
   const index = players.indexOf(p);
   const art = animatedPlayerArt[index];
   const runArt = selectedRunArt[index];
-  const hasSelectedRun = playerSpritePose(p).selectedRun && runArt.complete && runArt.naturalWidth;
+  const pose = playerSpritePose(p);
+  const hasSelectedRun = pose.selectedRun && runArt.complete && runArt.naturalWidth;
   const hasAnimatedArt = art?.complete && art.naturalWidth;
   const hasLegacyArt = playerArt.complete && playerArt.naturalWidth;
 
-  const hasFlying = playerSpritePose(p).flying && flyingReceiveArt.complete && flyingReceiveArt.naturalWidth;
-  const hasToss = playerSpritePose(p).toss && tossHitArt.complete && tossHitArt.naturalWidth;
-  const hasReceive = playerSpritePose(p).receive && receiveHitArt.complete && receiveHitArt.naturalWidth;
-  const hasBlock = playerSpritePose(p).block && blockArt.complete && blockArt.naturalWidth;
-  if ((playerSpritePose(p).service && serveArt.complete && serveArt.naturalWidth) || hasFlying || hasToss || hasReceive || hasBlock || hasSelectedRun || hasAnimatedArt || hasLegacyArt) {
-    drawPlayerSprite(p);
+  const hasFlying = pose.flying && flyingReceiveArt.complete && flyingReceiveArt.naturalWidth;
+  const hasToss = pose.toss && tossHitArt.complete && tossHitArt.naturalWidth;
+  const hasReceive = pose.receive && receiveHitArt.complete && receiveHitArt.naturalWidth;
+  const hasBlock = pose.block && blockArt.complete && blockArt.naturalWidth;
+  if ((pose.service && serveArt.complete && serveArt.naturalWidth) || hasFlying || hasToss || hasReceive || hasBlock || hasSelectedRun || hasAnimatedArt || hasLegacyArt) {
+    drawPlayerSprite(p, p.x, p.y, 1, null, pose);
     return;
   }
   drawProceduralPlayer(p);
@@ -1942,9 +1988,9 @@ function playerSpritePose(p) {
   return { row: 0, frame: Math.floor((p.motionClock ?? 0) * 4) % 6 };
 }
 
-function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor = null) {
+function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor = null, cachedPose = null) {
   const athlete = players.indexOf(p);
-  const pose = playerSpritePose(p);
+  const pose = cachedPose || playerSpritePose(p);
   const runArt = selectedRunArt[athlete];
   let art = animatedPlayerArt[athlete];
   let row = pose.row;
@@ -2122,7 +2168,24 @@ function drawScenery() {
     const scaledWidth = W * camera.zoom;
     const centerX = (VIEW_W - scaledWidth) / 2;
     const cameraShift = -camera.x * camera.zoom - centerX;
-    for (let y = 0; y < H; y += lineHeight) {
+
+    const rawYHorizon = (horizon * H - camera.y) * camera.zoom;
+    const rawYShoreline = (shoreline * H - camera.y) * camera.zoom;
+    const yHorizon = Math.max(0, Math.min(H, Math.floor(rawYHorizon / lineHeight) * lineHeight));
+    const yShoreline = Math.max(yHorizon, Math.min(H, Math.ceil(rawYShoreline / lineHeight) * lineHeight));
+
+    // Sky / distant mountains (single draw call: constant distantSpeed, ripple is 0)
+    if (yHorizon > 0) {
+      const worldFractionStart = camera.y / H;
+      const worldFractionEnd = (yHorizon / camera.zoom + camera.y) / H;
+      const offsetSky = Math.max(VIEW_W - scaledWidth,
+        Math.min(0, Math.round(centerX + cameraShift * distantSpeed)));
+      ctx.drawImage(beachArt, 0, worldFractionStart * ih, iw, (worldFractionEnd - worldFractionStart) * ih,
+        offsetSky, 0, scaledWidth, yHorizon);
+    }
+
+    // Sea raster strips (dynamic ripple & perspective acceleration only where visible)
+    for (let y = yHorizon; y < yShoreline; y += lineHeight) {
       const height = Math.min(lineHeight, H - y);
       const worldFraction = (y / camera.zoom + camera.y) / H;
       const seaProgress = Math.max(0, Math.min(1, (worldFraction - horizon) / (shoreline - horizon)));
@@ -2134,6 +2197,16 @@ function drawScenery() {
         Math.min(0, Math.round(centerX + cameraShift * speed + ripple)));
       ctx.drawImage(beachArt, 0, worldFraction * ih, iw, height / camera.zoom / H * ih,
         offset, y, scaledWidth, height);
+    }
+
+    // Sand backdrop (single draw call: 1.0 court speed, ripple is 0)
+    if (yShoreline < H) {
+      const worldFractionStart = (yShoreline / camera.zoom + camera.y) / H;
+      const worldFractionEnd = (H / camera.zoom + camera.y) / H;
+      const offsetSand = Math.max(VIEW_W - scaledWidth,
+        Math.min(0, Math.round(centerX + cameraShift)));
+      ctx.drawImage(beachArt, 0, worldFractionStart * ih, iw, (worldFractionEnd - worldFractionStart) * ih,
+        offsetSand, yShoreline, scaledWidth, H - yShoreline);
     }
   } else {
     const sky = ctx.createLinearGradient(0, 0, 0, 420);
@@ -2228,13 +2301,18 @@ function drawAttackSwoosh(p) {
 const PLAYER_LABEL_COLORS = {
   '1P': '#ff896b', '2P': '#72d8ff', '3P': '#ffe16b', '4P': '#d7a1ff', COM: '#d8e1dd'
 };
+const LABEL_WIDTH_CACHE = {};
 
 function drawPlayerFootLabel(p, index) {
   const label = characterCheck ? '1P' : window.matchLobby?.label(index) ?? (p.human ? `${p.human}P` : 'COM');
   const human = label !== 'COM';
   ctx.save();
   ctx.font = `italic 900 ${human ? 17 : 12}px "Barlow Condensed", Impact, sans-serif`;
-  const half = ctx.measureText(label).width / 2 + 4;
+  let textWidth = LABEL_WIDTH_CACHE[label];
+  if (textWidth === undefined) {
+    textWidth = LABEL_WIDTH_CACHE[label] = ctx.measureText(label).width;
+  }
+  const half = textWidth / 2 + 4;
   const specialLabel = String(p.specials ?? 0);
   const specialWidth = specialLabel.length * 10;
   const gaugeWidth = specialWidth + 51;
@@ -2288,6 +2366,7 @@ function drawPlayerChargeAfterimages(p) {
   const maxGhosts = isMaxCharge ? 4 : Math.max(1, Math.ceil(chargeRatio * 3));
   const count = Math.min(trail.length, maxGhosts);
 
+  const pose = playerSpritePose(p);
   for (let i = count - 1; i >= 0; i--) {
     const ghost = trail[i];
     const fraction = (i + 1) / (maxGhosts + 1);
@@ -2297,7 +2376,7 @@ function drawPlayerChargeAfterimages(p) {
     const offsetX = ghost.x + (p.side ? wave : -wave);
     const offsetY = ghost.y + Math.cos(time * 20 + i) * 1.5;
 
-    drawPlayerSprite(p, offsetX, offsetY, alpha, glow);
+    drawPlayerSprite(p, offsetX, offsetY, alpha, glow, pose);
   }
 
   if (isMaxCharge && Math.random() < 0.35) {
@@ -2901,6 +2980,9 @@ function scoreboardPresentation() {
   return { y: 4 + 14 * reveal, alpha: 0.68 + 0.32 * reveal, elapsed };
 }
 
+let hudLeftTint = null;
+let hudRightTint = null;
+
 function drawHud() {
   if (characterCheck) {
     if (paused) drawMatchCallout(true);
@@ -2920,12 +3002,16 @@ function drawHud() {
 
   ctx.save();
   ctx.beginPath();ctx.roundRect(x, y, width, height, 8);ctx.clip();
-  const leftTint = ctx.createLinearGradient(x, 0, x + 155, 0);
-  leftTint.addColorStop(0, '#8e453f');leftTint.addColorStop(1, '#263f4a');
-  ctx.fillStyle = leftTint;ctx.fillRect(x, y + 22, 155, height - 22);
-  const rightTint = ctx.createLinearGradient(x + width - 155, 0, x + width, 0);
-  rightTint.addColorStop(0, '#213f51');rightTint.addColorStop(1, '#176a85');
-  ctx.fillStyle = rightTint;ctx.fillRect(x + width - 155, y + 22, 155, height - 22);
+  if (!hudLeftTint) {
+    hudLeftTint = ctx.createLinearGradient(x, 0, x + 155, 0);
+    hudLeftTint.addColorStop(0, '#8e453f');
+    hudLeftTint.addColorStop(1, '#263f4a');
+    hudRightTint = ctx.createLinearGradient(x + width - 155, 0, x + width, 0);
+    hudRightTint.addColorStop(0, '#213f51');
+    hudRightTint.addColorStop(1, '#176a85');
+  }
+  ctx.fillStyle = hudLeftTint;ctx.fillRect(x, y + 22, 155, height - 22);
+  ctx.fillStyle = hudRightTint;ctx.fillRect(x + width - 155, y + 22, 155, height - 22);
   rect(x, y + 22, 4, height - 22, coral);
   rect(x + width - 4, y + 22, 4, height - 22, blue);
   rect(x, y + 21, width, 1, '#f2f5db25');
@@ -3028,16 +3114,7 @@ function loop(now) {
 
 function updateGuestVisuals(dt) {
   updateSpecialActivation(dt);
-  particles = particles.filter(p => (p.life -= dt) > 0);
-  particles.forEach(p => {
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    if (p.kind === 'sand') {
-      p.vx *= Math.exp(-(p.drag ?? 3) * dt);
-      p.vy += (p.gravity ?? (p.puff ? 40 : 280)) * dt;
-      if (p.y >= FLOOR) { p.y = FLOOR; p.vy = 0; p.vx *= Math.exp(-8 * dt); }
-    }
-  });
+  updateParticles(dt);
   if (ball) recordBallTrail();
   for (const p of players) {
     emitKnockbackSlideSand(p, dt);

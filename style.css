@@ -155,6 +155,8 @@ canvas {
   display: block;
   width: 100%;
   image-rendering: pixelated;
+  transform: translateZ(0);
+  contain: layout paint;
 }
 
 .overlay {
