@@ -27,7 +27,7 @@ jobs:
       - name: Prepare public files
         run: |
           mkdir _site
-          cp index.html character-preview.html game.js lobby.js style.css _site/
+          cp index.html character-preview.html game.js frame-data.js audio.js lobby.js style.css _site/
           cp -r assets vendor _site/
       - uses: actions/upload-pages-artifact@v3
         with:

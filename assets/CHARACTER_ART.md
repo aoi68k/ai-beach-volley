@@ -73,3 +73,55 @@ Exactly six poses per row, left to right:
 5 overhead set/block with BOTH hands open raised above forehead.
 6 airborne spike, one arm cocked above head, opposite arm forward, bent trailing leg.
 Bare feet and matching wrist bands. Preserve the four distinct identities across every pose. Sharp high-quality 32-bit arcade pixel art faithful to reference. Transparent empty space between sprites, no opaque background.
+
+## ブロック専用画像（2026-11-04）
+
+`characters/block-v1.png`: 内蔵ImageGenで作成した透過PNG（1536×1024、6列×4行）。参照は `../assets/volleyball-players-v2.png`。上から赤男・赤女・青男・青女。画像は生成時の6コマを保存し、採用するのは3・4・5コマ目。
+
+- ブロック判定中（blockTime > 0）：3コマ目を固定表示。
+- ブロック成功直後：4コマ目を固定表示。
+- 空振りで判定終了：5コマ目を固定表示。着地、別アクション、actionTime終了で通常の描画に戻る。
+- キャラプレビューは採用した3状態だけを表示し、1コマ進む／戻るで切替可能。
+- 画像の読み込み失敗時は元のトス／ブロック画像にフォールバック。物理演算と判定期間は変更しない。
+
+最終生成プロンプト：`characters/block-generation-prompt.txt`。透過を保ったまま生成画像を無加工でコピー。112px角、セル内足元250pxを描画基準とする。
+
+## アタックの採用コマ（更新）
+
+空中ショット入力で3コマ目を固定表示。実際の打球イベントから5コマ目を0.12秒、6コマ目を0.24秒表示。クイック・ダブルも同様。空振りはヒット後のポーズへ進めず、入力を離すと通常のジャンプ表示へ戻る。フェイントは従来の6コマを維持。プレビューでは3→5→6を表示する。
+
+## トスのヒット画像（2026-11-04）
+
+`characters/toss-hit-v1.png`：内蔵ImageGenで既存v2のトス姿勢を参照して作成。1254×1254、2列×2行、各627px角、透過PNG。左上が赤男、右上が赤女、左下が青男、右下が青女。生成画像は無加工で保存。
+
+トス入力中は既存のトス1コマ目（v2の5列目）を表示し、打球後0.3秒だけ新しい伸展姿勢を表示。ゲーム内120px角、足元は各セル589/589/602/604pxの位置で合わせる。プレビューも同じ比率で表示。読み込み失敗時は旧トスへ戻る。ボールの軌道・打球判定は変更しない。
+
+生成プロンプト：`characters/toss-generation-prompt.txt`。
+
+### トスのヒット v2（採用）
+
+`characters/toss-hit-v2.png` に更新。v1を内蔵ImageGenで編集し、4人とも肘を伸ばして手を上げた。1254×1254の透過PNGを無加工保存。上段はy=0〜605、下段はy=606〜1253で切り出し、上げた手を切らず縦横比を維持。足元基準は各切り出し領域内589/589/624/625px。v1は比較用に保存。生成指示は `characters/toss-v2-generation-prompt.txt`。
+
+## フライングレシーブ専用画像（2026-11-05）
+
+`characters/flying-receive-v1.png`：2064×1536（3列×4行、各セル688×384px）の透過PNG。上から赤男・赤女・青男・青女、左から「飛び込み（0.24秒）」「はらばい（0.36秒）」「片膝・片手起き上がり（0.32秒）」の3状態（合計0.92秒）。ゲーム内では横136px・縦76px（セル内接地基準y=364px）で描画し、飛び込む向きに合わせて左右反転する。読み込み失敗時はv2のレシーブへフォールバック。`character-preview.html` でも3状態を確認可能。
+
+
+## レシーブのヒット画像
+
+`characters/receive-hit-v1.png`：内蔵ImageGenで既存 `volleyball-players-v2.png` のキャラ・絵柄を参照して新規作成した透過PNG。1254×1254、2列×2行（627px角）、左上が赤男、右上が赤女、左下が青男、右下が青女。生成画像を透過のまま無加工で保存。
+
+既存v2の4列目を「構え」として保持。実際のレシーブ打球から18F（0.3秒）だけ、膝・上体を伸ばし両前腕を前に出した新しいヒット姿勢を表示し、その後は既存の構えに戻す。`FRAME_RULES.receiveContact` で表示時間を管理。打球の軌道・硬直・判定は変更しない。
+
+ゲーム内では100px角、セル内の足元606/607/605/605pxを接地基準として描画。左右反転は通常のチーム向きに従う。新画像の未読込時は既存のレシーブへフォールバック。`character-preview.html` は「構え／ヒット」の2状態を表示。
+
+最終生成プロンプト：`characters/receive-hit-generation-prompt.txt`。内蔵ImageGen使用。
+
+
+## サーブ専用画像
+
+`characters/serve-v1.png`：既存 `volleyball-players-v2.png` を参照し、内蔵ImageGenで作成した透過PNG。1774×887、4列×2行（各443.5px角）。生成画像は無加工で保存。上段は赤男の「保持／トス」、赤女の「保持／トス」、下段は同じ順で青男・青女。ボールは画像に含めず既存のボール画像を手元へ別描画する。
+
+ゲーム内132px角（待機姿勢と体格を合わせて旧104pxから約27%拡大）。足元基準は赤男・赤女429/443.5、青男・青女431/443.5。ボール保持中は1コマ目、Aトス後は地上にいる最初の0.3秒だけ2コマ目。ジャンプと打球は既存画像を使用する。保持・放出するボールの手元位置も拡大率に合わせ、サーブ中は画面端に16pxの余白を確保して腕が切れないようにする。アニメーションプレビューも同じ拡大率で「サーブ・2状態」を表示。
+
+生成プロンプト：`characters/serve-generation-prompt.txt`。内蔵ImageGen使用。

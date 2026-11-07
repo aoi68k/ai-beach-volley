@@ -11,7 +11,7 @@
     <header>
       <a class="brand" href="./">SR<span>BEACH CLUB / 01</span></a>
       <span class="tag">2 ON 2 · ENDLESS SUMMER</span>
-      <button id="sound">SOUND OFF</button>
+      <button id="sound" aria-pressed="true" aria-label="効果音の切り替え">SOUND ON</button>
     </header>
 
     <section class="intro">
@@ -28,14 +28,23 @@
     <section class="arena">
       <div class="arena-top">
         <span><i></i> LIVE FROM SUNSET BEACH</span>
-        <span id="status">フリープレイ / 先に11点で勝利</span>
+        <span id="status">先に11点で勝利</span>
       </div>
       <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
-      <div id="overlay" class="overlay">
-        <span class="eyebrow">WELCOME TO THE BEACH</span>
-        <h2>LET’S RALLY.</h2>
-        <p>キャラの操作担当を決めて、砂浜へ。</p>
-        <button id="start">PLAYER SETUP <span>↗</span></button>
+      <div id="overlay" class="overlay" aria-labelledby="overlay-title">
+        <div class="overlay-card">
+          <span id="overlay-eyebrow" class="eyebrow">SUNSET RALLY / WELCOME TO THE BEACH</span>
+          <h2 id="overlay-title">LET’S RALLY.</h2>
+          <div id="overlay-result" class="overlay-result" hidden aria-label="最終スコア">
+            <span class="result-team">CORAL CLUB</span>
+            <strong id="result-coral">00</strong>
+            <span class="result-divider">FINAL<br>SCORE</span>
+            <strong id="result-blue">00</strong>
+            <span class="result-team">BLUE TIDE</span>
+          </div>
+          <p>キャラの操作担当を決めて、砂浜へ。</p>
+          <button id="start">PLAYER SETUP <span>↗</span></button>
+        </div>
       </div>
       <div class="arena-bottom">
         <span>← → MOVE &nbsp; ↑ JUMP &nbsp; A SHOT &nbsp; B SET</span>
@@ -44,44 +53,131 @@
     </section>
 
     <section class="settings">
-      <div class="mode-block">
-        <p class="eyebrow">01 / MATCH MODE</p>
-        <div class="modes" id="modes"></div>
+      <div class="setting-block">
+        <p class="eyebrow">01 / SETTING & PRACTICE</p>
+        <div class="setting-actions">
+          <button id="open-gamepad-config" class="config-btn">GAMEPAD CONFIG / ボタン設定 ↗</button>
+          <button id="character-check" class="check-btn">CHARACTER CHECK / キャラ挙動チェック ↗</button>
+          <button id="exit-character-check" class="exit-btn" hidden>試合の設定に戻る</button>
+        </div>
+        <p class="hint">コントローラーの割り当て（1P〜4P）やボタン設定、1人で通常の打球やジャンプの操作を確認できる練習モードを利用できます。</p>
+        <p class="hint-sub">※試合の操作担当（1P〜4P、COM）やオンライン対戦は、画面中央の「PLAYER SETUP」からいつでも自由に設定できます。</p>
       </div>
       <div class="controls">
         <p class="eyebrow">02 / HOW TO PLAY</p>
-        <p><b>A / ショット</b><span>地上：前＋Aで返球、Aのみで自陣へ。空中：アタック、後ろ＋Aでフェイント。</span></p>
-        <p><b>B / トス</b><span>自陣へトス。空中＋相手コートに球でブロック。</span></p>
+        <button id="show-frame-data" aria-controls="frame-data">フレーム一覧 ↗</button>
+        <p><b>SERVE / サーブ</b><span>コート外の選手がサーバー。Bは直接ブロック・アタックされない高い地上サーブ。Aでトスし、↑ジャンプ→再度Aでジャンプサーブ（前は低く速く、上は奥へ沈む高弾道ドライブ、後ろは遅い山なり、下は1sp消費の青い高速低空サーブ）。トスを落としたらやり直し可能。</span></p>
+        <p><b>A / ショット</b><span>地上：Aを押してレシーブの構え。前＋Aで返球、Aのみで自陣へ（離れた球へはボール方向＋Aでフライングレシーブ）。空中：前＋Aは相手コートの奥を狙うアタック、後ろ＋Aはフェイント。アタックはAを押して構えるほど弾速アップ（0.5秒で最大）。</span></p>
+        <p><b>B / トス・ブロック</b><span>自陣へトス。空中で相手コートに球がある時はBでブロック。</span></p>
+        <p><b>SPECIAL / 各1sp</b><span>空中で下＋B：モズ落とし。空中で下＋A：パワーアタック。サーブ時に下＋A：パワーサーブ（青い球）。地上で下＋A：パワーレシーブ（緑の球、ノックバック無効・接触硬直短縮・自陣ネット手前へ上がりクイック可）。打球時に1sp消費。</span></p>
         <small>
-          空中で後ろ＋A：フェイント（左チームは左、右チームは右）。<br>
           上・A・Bは押しっぱなしで、行動可能になり次第繰り返します。<br>
-          1P: ← → ↑ / Z・X（A・Bも可）<br>
-          2P: F H T / G・V　3P: J L I / K・M<br>
-          4P: テンキー 4 6 8 / 1・2　ゲームパッド1〜4対応（スティック／十字キー：左右で移動・上でジャンプ）
+          空中でボールに触れると、着地後0.2秒は操作できません。構え・空振りだけなら着地硬直なし。<br>
+          1P: ← → ↑ ↓ / Z・X<br>
+          2P: F H T C / G・V　3P: J L I N / K・M　4P: テンキー 4 6 8 5 / 1・2<br>
+          ゲームパッド1〜4対応（スティック／十字キー：移動・ジャンプ、左ボタンA、右ボタンB）
         </small>
       </div>
     </section>
 
+    <details id="frame-data" class="frame-data">
+      <summary>FRAME DATA / フレーム一覧</summary>
+      <p id="frame-data-basis"></p>
+      <p>入力硬直中は移動・ジャンプ・打球を制限します。いずれも発生時からの時間です。</p>
+      <p id="frame-data-motion"></p>
+      <div class="frame-table-scroll" role="region" aria-label="動作別のフレーム・弾速・ノックバック" tabindex="0">
+        <table>
+          <caption>現在のゲーム設定（設定値から自動表示）</caption>
+          <thead><tr><th scope="col">動作</th><th scope="col">発動方法・条件</th><th scope="col">起点</th><th scope="col">入力硬直</th><th scope="col">受け手のノックバック</th><th scope="col">弾速（px/秒）</th><th scope="col">補足</th></tr></thead>
+          <tbody id="frame-data-body"></tbody>
+        </table>
+      </div>
+      <p id="frame-data-landing"></p>
+      <p id="frame-data-cooldown"></p>
+      <p id="frame-data-double"></p>
+      <p id="frame-data-knockback"></p>
+      <p id="frame-data-speed-reference"></p>
+      <p id="frame-data-block-speed"></p>
+      <p id="frame-data-gauge"></p>
+      <p class="frame-note">トスの構えは入力を続ける間保持。地上の姿勢制限は、ジャンプや別の動作で姿勢が変われば解除されます。吹き飛び・飛び込みの自動移動は別です。秒で設定されていた端数は最も近い整数フレームに揃えています。この一覧を開いても試合は止まりません。</p>
+    </details>
+
     <footer>
       <span>NO TOUCH LIMIT. JUST GOOD TIMES.</span>
-      <span>PROTOTYPE 01 / 特殊技は今後追加予定</span>
+      <span>QUICK · DOUBLE · SPECIAL</span>
     </footer>
   </main>
+  <dialog id="gamepad-config" aria-labelledby="gamepad-config-title">
+    <div class="config-heading">
+      <div><p class="eyebrow">CONTROLLER SETTINGS</p><h2 id="gamepad-config-title">GAMEPAD CONFIG</h2></div>
+      <button id="close-gamepad-config" aria-label="閉じる">✕</button>
+    </div>
+    <div id="gamepad-status-bar" class="config-status-bar">
+      <span class="status-icon">🎮</span>
+      <span id="gamepad-status-text">コントローラーを検出中...</span>
+    </div>
+
+    <div class="config-tabs" id="gamepad-player-tabs" role="tablist">
+      <button class="config-tab active" data-player="1" role="tab" aria-selected="true">1P</button>
+      <button class="config-tab" data-player="2" role="tab" aria-selected="false">2P</button>
+      <button class="config-tab" data-player="3" role="tab" aria-selected="false">3P</button>
+      <button class="config-tab" data-player="4" role="tab" aria-selected="false">4P</button>
+    </div>
+
+    <div class="config-body">
+      <div class="config-device-row">
+        <label for="gamepad-select">使用するコントローラー:</label>
+        <select id="gamepad-select"></select>
+      </div>
+
+      <div class="config-table-wrap">
+        <table class="config-table">
+          <thead>
+            <tr>
+              <th>ボタン</th>
+              <th>アクション</th>
+              <th>現在の割り当て</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="gamepad-bindings-body"></tbody>
+        </table>
+      </div>
+
+      <div id="gamepad-capture-overlay" class="capture-overlay" hidden>
+        <div class="capture-card">
+          <p class="eyebrow">PRESS A BUTTON</p>
+          <p class="capture-action-name" id="capture-action-name">A（ショット）</p>
+          <p class="capture-instruction">割り当てたいコントローラーのボタンを押してください</p>
+          <small class="capture-tip">※Escキーまたはキャンセルで中止</small>
+          <button id="cancel-capture-btn" class="cancel-capture-btn">キャンセル</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-footer">
+      <button id="reset-gamepad-config" class="btn-subtle">標準設定に戻す</button>
+      <button id="close-gamepad-config-btn" class="btn-primary">完了</button>
+    </div>
+  </dialog>
   <dialog id="lobby" aria-labelledby="lobby-title">
     <div class="lobby-heading"><div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div><button id="close-lobby" aria-label="閉じる">✕</button></div>
-    <p>4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
-    <div class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
+    <p id="lobby-intro">4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
+    <div id="lobby-tabs" class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
     <div class="join-row"><label>部屋コード <input id="room-code" maxlength="80" placeholder="招待されたコードを入力" autocomplete="off"></label><button id="join-room">参加する</button></div>
     <div id="room-details" hidden><label>招待リンク <input id="invite-link" readonly></label><button id="copy-invite">コピー</button><button id="leave-room">部屋を退出</button></div>
     <p id="lobby-message" role="status" aria-live="polite">同じ端末の1P〜4P、またはCOMを割り当てます。</p>
     <div id="player-slots" class="player-slots"></div>
     <p id="lobby-help">同じ操作担当は1キャラまで。空いたキャラはCOMにできます。</p>
     <button id="launch-match" class="launch-match">この担当で試合開始 ↗</button>
-    <small>オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
+    <small id="lobby-notes">オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
   </dialog>
   <script src="vendor/peerjs.min.js"></script>
   <script src="assets/characters/idle-alignment.js"></script>
+  <script src="audio.js"></script>
+  <script src="gamepad-config.js"></script>
   <script src="game.js"></script>
+  <script src="frame-data.js"></script>
   <script src="lobby.js"></script>
 </body>
 </html>

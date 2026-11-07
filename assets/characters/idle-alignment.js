@@ -9,3 +9,11 @@ const IDLE_ALIGNMENT_X = [
   [0, -0.5, -1, 0, -0.75, -1.75],
   [0, 0.25, 0, -0.25, -0.75, -0.75]
 ];
+// Lowest opaque foot edge in each 256px jump cell, including landing.
+// Keep the visual feet on the physics anchor as the pose changes.
+const JUMP_BASELINES = [
+  [250, 250, 221, 207, 250, 250],
+  [248, 248, 215, 206, 237, 248],
+  [251, 251, 210, 212, 251, 251],
+  [251, 251, 225, 212, 251, 251]
+];

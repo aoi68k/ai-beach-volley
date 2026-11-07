@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>キャラアニメーション — SUNSET RALLY</title>
+  <link rel="stylesheet" href="style.css">
   <style>
     * {
       box-sizing: border-box;
@@ -11,9 +12,8 @@
 
     body {
       margin: 0;
-      background: #f8f1de;
-      color: #143b49;
-      font: 15px system-ui, sans-serif;
+      color: var(--ink);
+      font: 14px 'Noto Sans JP', system-ui, sans-serif;
     }
 
     main {
@@ -24,7 +24,8 @@
 
     h1 {
       margin: 8px 0;
-      font-size: 28px;
+      font: 900 30px/1.3 'Noto Sans JP', system-ui, sans-serif;
+      letter-spacing: 0;
     }
 
     p {
@@ -36,21 +37,49 @@
     }
 
     nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       flex-wrap: wrap;
-      margin: 18px 0;
+      margin: 10px 0 16px;
+      padding: 10px 14px;
+      background: #102f43f5;
+      color: #e1f4ef;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 8px;
+      border: 1px solid #70d9ef55;
+      box-shadow: 0 6px 20px #102f4320;
+    }
+
+    .key-hints {
+      font-size: 11px;
+      color: #c0dce0;
+      margin-left: auto;
+      white-space: nowrap;
+    }
+
+    .key-hints kbd {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid #acc5c5;
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-family: inherit;
+      font-size: 11px;
     }
 
     button,
     select {
       font: inherit;
-      border: 1px solid #99adae;
-      border-radius: 6px;
+      border: 1px solid #83b6c3;
+      border-radius: 5px;
       padding: 9px 16px;
       background: white;
-      color: inherit;
+      color: var(--ink);
       cursor: pointer;
     }
 
@@ -63,8 +92,8 @@
       width: 100%;
       display: block;
       background: #e6f0ee;
-      border-radius: 12px;
-      border: 1px solid #acc5c5;
+      border-radius: 8px;
+      border: 1px solid #16465a60;
       image-rendering: pixelated;
     }
 
@@ -75,28 +104,48 @@
 
     #load-status {
       min-height: 24px;
+      padding: 10px 0;
+      color: var(--accent);
+      font-size: 12px;
+    }
+
+    @media (max-width: 650px) {
+      main { padding: 20px 14px; }
+      h1 { font-size: 24px; }
+      nav { gap: 8px; padding: 10px; }
+      button, select { font-size: 12px; padding: 8px; }
+      .key-hints { margin-left: 0; white-space: normal; line-height: 1.9; }
     }
   </style>
 </head>
 <body>
   <main>
     <a href="index.html">← ゲームへ</a>
+    <p class="eyebrow">SUNSET RALLY / ANIMATION LAB</p>
     <h1>キャラアニメーション</h1>
     <p>4人全員の走りに、選んでいただいた全身絵の12コマを採用しています。</p>
 
-    <nav>
-      <button id="play">一時停止</button>
-      <button id="step">1コマ進む</button>
+    <nav aria-label="プレビュー操作バー">
+      <button id="play" title="Spaceキーでも切替可">一時停止</button>
+      <button id="step-back" title="←キー または Aキー">◀ 1コマ戻る</button>
+      <button id="step" title="→キー または Dキー">1コマ進む ▶</button>
+      <label>
+        移動:
+        <select id="jump-row">
+          <option value="">行へジャンプ…</option>
+        </select>
+      </label>
       <label>
         再生速度
         <select id="speed">
+          <option value=".25">0.25倍</option>
           <option value=".5">0.5倍</option>
           <option value="1" selected>1倍</option>
           <option value="2">2倍</option>
         </select>
       </label>
       <label>
-        <input id="flip" type="checkbox"> 左右反転
+        <input id="flip" type="checkbox"> 左右反転 (F)
       </label>
       <label>
         背景
@@ -106,17 +155,20 @@
           <option value="#e9c990">砂浜色</option>
         </select>
       </label>
+      <div class="key-hints">
+        <kbd>Space</kbd> 停止/再生 · <kbd>←</kbd> <kbd>→</kbd> コマ送り · <kbd>F</kbd> 反転
+      </div>
     </nav>
 
     <div id="load-status" role="status">画像を読み込んでいます…</div>
     <canvas
       id="preview"
       width="1040"
-      height="1040"
-      aria-label="4人のキャラクターの待機、走り、アタック、ジャンプ、トス、レシーブのアニメーション比較"
+      height="1520"
+      aria-label="4人のキャラクターの待機、走り、アタック、ジャンプ、トス、レシーブ、ブロック、フライングレシーブのアニメーション比較"
     ></canvas>
     <p class="hint">
-      「1コマ進む」で各中間ポーズを確認できます。このページでは全コマを比較しやすいよう繰り返し再生します。ゲーム内のジャンプは実際の上昇・下降に同期し、アタックは1回ずつ再生します。
+      「1コマ戻る」「1コマ進む」で各中間ポーズを確認できます。先頭から戻ると最後のコマになります。このページでは使用するコマを繰り返し再生します。ブロックは3コマ目（判定中）、4コマ目（成功）、5コマ目（空振り終了）の固定ポーズです。レシーブは構えとヒットの2状態で、ゲーム内では打球時だけヒット姿勢を0.3秒表示します。フライングレシーブは飛び込み→はらばい→起き上がりの3状態です。ゲーム内のジャンプは実際の上昇・下降に同期し、アタックは3コマ目で構え、当たった瞬間から5→6コマ目を1回再生します。
     </p>
 
     <script src="assets/characters/idle-alignment.js"></script>
@@ -126,10 +178,13 @@
       const ACTION_ROWS = [
         { label: '待機 · 6コマ', frames: 6, fps: 4 },
         { label: '走り · 12コマ', frames: 12, fps: 24 },
-        { label: 'アタック · 6コマ', frames: 6, fps: 8 },
+        { label: 'アタック · 3状態', frames: 3, fps: 6, sourceFrames: [2, 4, 5], frameLabels: ['構え', 'ヒット', '振り抜き'] },
         { label: 'ジャンプ · 6コマ', frames: 6, fps: 6 },
-        { label: 'トス · 既存1コマ', frames: 1, fps: 0 },
-        { label: 'レシーブ · 既存1コマ', frames: 1, fps: 0 }
+        { label: 'トス · 2状態', frames: 2, fps: 2, frameLabels: ['構え', 'ヒット'] },
+        { label: 'レシーブ · 2状態', frames: 2, fps: 2, frameLabels: ['構え', 'ヒット'] },
+        { label: 'ブロック · 3状態', frames: 3, fps: 2, sourceFrames: [2, 3, 4], frameLabels: ['判定中', '成功', '空振り終了'] },
+        { label: 'フライング · 3状態', frames: 3, fps: 3, frameLabels: ['飛び込み', 'はらばい', '起き上がり'] },
+        { label: 'サーブ · 2状態', frames: 2, fps: 2, frameLabels: ['ボール保持', 'トス'] }
       ];
 
       function loadImage(src) {
@@ -141,11 +196,21 @@
       const sheets = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-v3.png`));
       const selectedRuns = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-run-selected.png`));
       const legacy = loadImage('assets/volleyball-players-v2.png');
+      const blocks = loadImage('assets/characters/block-v1.png');
+      const attackSwoosh = loadImage('assets/effects/attack-swoosh-v1.png');
+      const tossHits = loadImage('assets/characters/toss-hit-v2.png');
+      const receiveHits = loadImage('assets/characters/receive-hit-v1.png');
+      const serves = loadImage('assets/characters/serve-v1.png');
+      const SERVE_BASELINES = [429, 429, 431, 431].map(y => y / 443.5);
+      const RECEIVE_HIT_BASELINES = [606, 607, 605, 605].map(y => y / 627);
+      const flyingReceives = loadImage('assets/characters/flying-receive-v1.png');
+      const TOSS_HIT_BASELINES = [589, 589, 624, 625].map(y => y / 627);
 
       const canvas = document.querySelector('#preview');
       const ctx = canvas.getContext('2d');
       const playButton = document.querySelector('#play');
       const stepButton = document.querySelector('#step');
+      const stepBackButton = document.querySelector('#step-back');
       const speedSelect = document.querySelector('#speed');
       const flipCheckbox = document.querySelector('#flip');
       const backgroundSelect = document.querySelector('#background');
@@ -154,10 +219,10 @@
       let playing = true;
       let clock = 0;
       let last = 0;
-      let frozen = [0, 0, 0, 0];
+      let frozen = ACTION_ROWS.map(() => 0);
 
       function currentFrames() {
-        return ACTION_ROWS.slice(0, 4).map(row => Math.floor(clock * row.fps) % row.frames);
+        return ACTION_ROWS.map(row => Math.floor(clock * row.fps) % row.frames);
       }
 
       playButton.onclick = () => {
@@ -166,39 +231,68 @@
         playButton.textContent = playing ? '一時停止' : '再生';
       };
 
-      stepButton.onclick = () => {
+      function stepFrame(direction) {
         if (playing) frozen = currentFrames();
         playing = false;
         playButton.textContent = '再生';
-        frozen = frozen.map((frame, i) => (frame + 1) % ACTION_ROWS[i].frames);
-      };
+        frozen = frozen.map((frame, i) => (frame + direction + ACTION_ROWS[i].frames) % ACTION_ROWS[i].frames);
+      }
+
+      stepButton.onclick = () => stepFrame(1);
+      stepBackButton.onclick = () => stepFrame(-1);
 
       function drawCell(row, athleteIndex, frame, y) {
+        if (row === 8) {
+          if (!serves.complete || !serves.naturalWidth) return;
+          const cw = serves.naturalWidth / 4, ch = serves.naturalHeight / 2;
+          const size = 144 * 132 / 112;
+          ctx.save();
+          ctx.translate(190 + athleteIndex * 240, y + 140);
+          if (flipCheckbox.checked) ctx.scale(-1, 1);
+          ctx.drawImage(serves, (athleteIndex % 2 * 2 + frame) * cw, Math.floor(athleteIndex / 2) * ch,
+            cw, ch, -size / 2, -size * SERVE_BASELINES[athleteIndex], size, size);
+          ctx.restore();
+          return;
+        }
+        const isFlyingRow = row === 7;
+        const isTossHit = row === 4 && frame === 1;
+        const isReceiveHit = row === 5 && frame === 1;
+        const isBlockRow = row === 6;
         const isRunRow = row === 1;
         const isAnimatedRow = row < 4;
-        const img = isRunRow ? selectedRuns[athleteIndex] : isAnimatedRow ? sheets[athleteIndex] : legacy;
+        const img = isFlyingRow ? flyingReceives : isReceiveHit ? receiveHits : isTossHit ? tossHits : isBlockRow ? blocks : isRunRow ? selectedRuns[athleteIndex] : isAnimatedRow ? sheets[athleteIndex] : legacy;
         if (!img.complete || !img.naturalWidth) return;
 
-        const column = isRunRow ? frame % 6 : isAnimatedRow ? frame : row === 4 ? 4 : 3;
-        const sourceRow = isRunRow ? Math.floor(frame / 6) : isAnimatedRow ? row : athleteIndex;
-        const cellWidth = img.naturalWidth / 6;
-        const cellHeight = img.naturalHeight / (isRunRow ? 2 : 4);
+        const column = isFlyingRow ? frame : isTossHit || isReceiveHit ? athleteIndex % 2 : ACTION_ROWS[row].sourceFrames ? ACTION_ROWS[row].sourceFrames[frame] : isRunRow ? frame % 6 : isAnimatedRow ? frame : row === 4 ? 4 : 3;
+        const sourceRow = isFlyingRow ? athleteIndex : isTossHit || isReceiveHit ? Math.floor(athleteIndex / 2) : isBlockRow ? athleteIndex : isRunRow ? Math.floor(frame / 6) : isAnimatedRow ? row : athleteIndex;
+        const cellWidth = img.naturalWidth / (isFlyingRow ? 3 : isTossHit || isReceiveHit ? 2 : 6);
+        const cellHeight = isTossHit ? (athleteIndex < 2 ? 606 : 648) : img.naturalHeight / (isRunRow || isReceiveHit ? 2 : 4);
+        const sourceY = isTossHit ? (athleteIndex < 2 ? 0 : 606) : sourceRow * cellHeight;
         const x = 190 + athleteIndex * 240;
 
+        const size = isFlyingRow ? 144 * 136 / 112 : isReceiveHit ? 144 * 100 / 112 : isTossHit ? 144 * 120 / 112 : 144;
+        const drawHeight = isFlyingRow || isTossHit ? size * cellHeight / cellWidth : size;
         ctx.save();
         ctx.translate(x, y + 140);
         if (flipCheckbox.checked) ctx.scale(-1, 1);
         ctx.drawImage(
           img,
           column * cellWidth,
-          sourceRow * cellHeight,
+          sourceY,
           cellWidth,
           cellHeight,
-          -72 + (row === 0 ? IDLE_ALIGNMENT_X[athleteIndex][frame] * 144 / 256 : 0),
-          -140,
-          144,
-          144
+          -size / 2 + (row === 0 ? IDLE_ALIGNMENT_X[athleteIndex][frame] * 144 / 256 : 0),
+          isFlyingRow ? -drawHeight * 364 / 384 : isReceiveHit ? -size * RECEIVE_HIT_BASELINES[athleteIndex] : isTossHit ? -size * TOSS_HIT_BASELINES[athleteIndex]
+            : row === 3 ? -size * JUMP_BASELINES[athleteIndex][frame] / 256 : -140,
+          size,
+          drawHeight
         );
+        if (row === 2 && column === 4 && attackSwoosh.complete && attackSwoosh.naturalWidth) {
+          const scale = 144 / 112;
+          ctx.globalAlpha = 0.9;
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(attackSwoosh, -54 * scale, -112 * scale, 106 * scale, 106 * scale);
+        }
         ctx.restore();
       }
 
@@ -220,7 +314,7 @@
         for (let row = 0; row < ACTION_ROWS.length; row++) {
           const y = 55 + row * 160;
           const rowInfo = ACTION_ROWS[row];
-          const frame = row < 4 ? (playing ? activeFrames[row] : frozen[row]) : 0;
+          const frame = playing ? activeFrames[row] : frozen[row];
 
           ctx.font = '13px system-ui';
           ctx.textAlign = 'left';
@@ -231,15 +325,52 @@
           }
 
           ctx.textAlign = 'left';
-          ctx.fillText(`${frame + 1} / ${rowInfo.frames}`, 12, y + 45);
+          ctx.fillText(rowInfo.sourceFrames
+            ? `${rowInfo.sourceFrames[frame] + 1}コマ目 / ${rowInfo.frameLabels[frame]}`
+            : `${frame + 1} / ${rowInfo.frames}${rowInfo.frameLabels ? " · " + rowInfo.frameLabels[frame] : ""}`, 12, y + 45);
         }
 
         requestAnimationFrame(render);
       }
 
-      Promise.all([...sheets, ...selectedRuns, legacy].map(img => img.decode()))
+      // --- UI Enhancements: Keyboard Shortcuts & Row Navigation ---
+      const jumpRowSelect = document.querySelector('#jump-row');
+      if (jumpRowSelect) {
+        ACTION_ROWS.forEach((r, idx) => {
+          const opt = document.createElement('option');
+          opt.value = idx;
+          opt.textContent = `${idx + 1}. ${r.label}`;
+          jumpRowSelect.append(opt);
+        });
+
+        jumpRowSelect.addEventListener('change', () => {
+          const idx = Number(jumpRowSelect.value);
+          if (Number.isNaN(idx) || idx < 0) return;
+          const targetY = canvas.getBoundingClientRect().top + window.scrollY + 55 + idx * 160 - 120;
+          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          jumpRowSelect.value = '';
+        });
+      }
+
+      window.addEventListener('keydown', e => {
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+        if (e.code === 'Space') {
+          e.preventDefault();
+          playButton.click();
+        } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+          e.preventDefault();
+          stepButton.click();
+        } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+          e.preventDefault();
+          stepBackButton.click();
+        } else if (e.code === 'KeyF') {
+          flipCheckbox.checked = !flipCheckbox.checked;
+        }
+      });
+
+      Promise.all([...sheets, ...selectedRuns, legacy, blocks, tossHits, receiveHits, flyingReceives, serves].map(img => img.decode()))
         .then(() => {
-          loadStatus.textContent = '全画像を読み込みました · 4人全員の走り12コマを採用';
+          loadStatus.textContent = '全画像を読み込みました · 走り12コマ / トス2状態 / レシーブ2状態 / ブロック3状態 / フライング3状態 / サーブ2状態 × 4人';
         })
         .catch(() => {
           loadStatus.textContent = '画像の読み込みに失敗しました。assets フォルダーを確認してください。';

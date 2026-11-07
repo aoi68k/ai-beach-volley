@@ -5,6 +5,15 @@ node_modules/
 /tmp/
 /work/
 
+# Prompts, rough sketches, and unused draft assets (not for publication)
+*prompt*.txt
+*.prompt
+*sketch*
+*reference*
+assets/characters/back-dash*
+assets/characters/back-run-v1*
+assets/characters/toss-hit-v1*
+
 # Test and coverage output
 /playwright-report/
 /test-results/
@@ -20,6 +29,13 @@ node_modules/
 !.env.example
 !.env.sample
 
+# Temporary files, caches and backups
+*.tmp
+*.bak
+*.orig
+*.rej
+*.cache
+
 # Logs
 *.log
 npm-debug.log*
@@ -30,9 +46,14 @@ pnpm-debug.log*
 # Editor and OS files
 .vscode/
 .idea/
+.cursor/
+.windsurf/
+.zed/
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
-Desktop.ini
+.DS_Store*
+Thumbs.db*
+ehthumbs.db
+[Dd]esktop.ini*
+

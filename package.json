@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node scripts/serve.cjs",
-    "test": "node tests/animation.test.cjs && node tests/network.test.cjs",
+    "test": "node tests/animation.test.cjs && node tests/network.test.cjs && node tests/gamepad-config.test.cjs",
     "test:browser": "playwright test"
   },
   "devDependencies": { "@playwright/test": "1.56.1" }
