@@ -535,7 +535,7 @@ window.addEventListener('keydown', e => {
   }
   keys.add(e.code);
   if (e.repeat) return;
-  if (window.matchLobby?.online && ['Space', 'KeyR'].includes(e.code)) {
+  if (window.matchLobby?.online && ['Space', 'KeyR', 'Escape'].includes(e.code)) {
     window.matchLobby.command(e.code);
     return;
   }
@@ -1569,7 +1569,12 @@ function updateParticles(dt) {
 }
 
 function update(dt) {
-  if (paused) return;
+  if (window.matchLobby?.online && !window.matchLobby.guest) {
+    for (let i = 0; i < players.length; i++) {
+      players[i].human = window.matchLobby.assignment(i);
+    }
+  }
+  if (paused || window.matchLobby?.isWaitingForHost) return;
   updateSpecialActivation(dt);
   time += dt;
   shake *= 0.85;
@@ -2934,8 +2939,9 @@ function drawBallAndParticles() {
 
 function drawMatchCallout(isPaused) {
   ctx.save();
+  const isHostWaiting = Boolean(window.matchLobby?.isWaitingForHost);
   const centerY = isPaused ? 280 : 192;
-  const accent = isPaused ? '#70d9ef' : '#ff956e';
+  const accent = isHostWaiting ? '#ffb347' : isPaused ? '#70d9ef' : '#ff956e';
   if (isPaused) rect(0, 0, W, H, '#061c2c99');
   ctx.translate(VIEW_W / 2, centerY);
   ctx.textAlign = 'center';
@@ -2948,9 +2954,12 @@ function drawMatchCallout(isPaused) {
   ctx.lineTo(184, -33);ctx.lineTo(-198, -33);ctx.closePath();ctx.fill();
   ctx.font = '700 11px "Barlow Condensed", sans-serif';
   ctx.fillStyle = '#e4eee4';
-  ctx.fillText(isPaused ? 'SUNSET RALLY  /  TIME OUT' : 'SUNSET RALLY  /  NEXT SERVE', 0, -45);
+  const subTitle = isHostWaiting
+    ? 'SUNSET RALLY  /  HOST DISCONNECTED'
+    : isPaused ? 'SUNSET RALLY  /  TIME OUT' : 'SUNSET RALLY  /  NEXT SERVE';
+  ctx.fillText(subTitle, 0, -45);
   ctx.font = 'italic 900 72px "Barlow Condensed", Impact, sans-serif';
-  const title = isPaused ? 'PAUSED' : serveState ? 'SERVE' : 'READY?';
+  const title = isHostWaiting ? 'WAITING' : isPaused ? 'PAUSED' : serveState ? 'SERVE' : 'READY?';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = '#102f43';ctx.lineWidth = 9;
   ctx.strokeText(title, 0, 5);
@@ -2966,9 +2975,11 @@ function drawMatchCallout(isPaused) {
   ctx.restore();
   ctx.font = '700 12px "Noto Sans JP", sans-serif';
   ctx.lineWidth = 4;ctx.strokeStyle = '#102f43';
-  const hint = isPaused
-    ? (window.matchLobby?.online ? 'ホストの SPACE で再開' : 'SPACE で再開')
-    : serveState ? 'A トス → ↑ ジャンプ → A 打球 / B 地上サーブ' : 'まもなくサーブ';
+  const hint = isHostWaiting
+    ? 'ホストが切断されました。復帰を待機しています…'
+    : isPaused
+      ? (window.matchLobby?.online ? 'ホストの SPACE で再開' : 'SPACE で再開')
+      : serveState ? 'A トス → ↑ ジャンプ → A 打球 / B 地上サーブ' : 'まもなくサーブ';
   ctx.strokeText(hint, 0, 72);ctx.fillStyle = '#fff9e5';ctx.fillText(hint, 0, 72);
   ctx.restore();
 }
@@ -3025,7 +3036,8 @@ function drawHud() {
   ctx.textAlign = 'right';ctx.fillStyle = '#aec9cc';
   ctx.fillText(`FIRST TO ${WINNING_SCORE}`, x + width - 13, y + 11);
   ctx.textAlign = 'center';ctx.fillStyle = winner ? '#ffe58e' : '#eef8e7';
-  const matchStatus = winner ? (score[0] >= WINNING_SCORE ? 'CORAL WINS' : 'BLUE WINS')
+  const isHostWaiting = Boolean(window.matchLobby?.isWaitingForHost);
+  const matchStatus = isHostWaiting ? 'WAITING HOST' : winner ? (score[0] >= WINNING_SCORE ? 'CORAL WINS' : 'BLUE WINS')
     : paused ? 'PAUSED' : pointEnd ? `${pointEnd.side ? 'BLUE' : 'CORAL'} +1`
     : Math.max(...score) === WINNING_SCORE - 1 ? 'MATCH POINT' : '2 ON 2';
   ctx.font = '800 10px "Barlow Condensed", sans-serif';
@@ -3065,7 +3077,7 @@ function drawHud() {
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'center';
 
-  if (paused) {
+  if (paused || isHostWaiting) {
     drawMatchCallout(true);
   } else if (running && serveTimer > 0 && (!serveState || serveState.phase === 'holding')) {
     drawMatchCallout(false);
@@ -3197,7 +3209,7 @@ function loop(now) {
   window.matchLobby?.tick(now);
   if (!window.matchLobby?.guest) update(dt);
   else updateGuestVisuals(dt);
-  if (!paused) updateCamera(dt);
+  if (!paused && !window.matchLobby?.isWaitingForHost) updateCamera(dt);
   draw();
   requestAnimationFrame(loop);
 }
@@ -3241,6 +3253,14 @@ window.rallyGame = {
   start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); document.querySelector('#overlay').classList.add('hidden'); },
   stop() { reset(); keys.clear(); },
   pause() { if (running) { paused = !paused; status(); } },
+  syncAssignments() {
+    if (window.matchLobby?.online && !window.matchLobby.guest) {
+      for (let i = 0; i < players.length; i++) {
+        players[i].human = window.matchLobby.assignment(i);
+      }
+    }
+  },
+  get isWaitingForHost() { return Boolean(window.matchLobby?.isWaitingForHost); },
   controller() { return readController(1, navigator.getGamepads?.() || []); },
   ballTrackerState() {
     if (!ball) return null;

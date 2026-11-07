@@ -14,7 +14,7 @@ test('invitation view only permits joining and keeps setup under host control', 
     window.Peer=class {
       constructor(){this.handlers={};window.testPeer=this;queueMicrotask(()=>this.handlers.open?.('test-guest'));}
       on(name,fn){this.handlers[name]=fn;}
-      connect(peer){const c=window.testConnection=new TestConnection(peer);queueMicrotask(()=>c.emit('open'));return c;}
+      connect(peer){const c=window.testConnection=new TestConnection(peer);if(window.autoOpenConnect!==false)queueMicrotask(()=>c.emit('open'));return c;}
       destroy(){}
     };
   `}));
@@ -68,8 +68,23 @@ test('invitation view only permits joining and keeps setup under host control', 
   await page.keyboard.down('ArrowRight');
   await expect.poll(()=>page.evaluate(()=>window.testConnection.sent.some(p=>p.type==='input'&&p.input.move===1))).toBe(true);
   await page.keyboard.up('ArrowRight');
-  // Disconnect returns to invitation-only retry, without enabling local or host setup.
+  // Disconnect during match pauses game and enters waiting-for-host state.
+  await page.evaluate(() => { window.autoOpenConnect = false; });
   await page.evaluate(()=>window.testConnection.emit('close'));
+  expect(await page.evaluate(() => window.matchLobby.isWaitingForHost)).toBe(true);
+  await expect(page.locator('#lobby')).toBeHidden();
+
+  // Host reconnection resumes match.
+  await page.evaluate(() => {
+    window.testConnection.emit('open');
+    window.testConnection.emit('data', { type: 'state', state: window.rallyGame.snapshot() });
+  });
+  expect(await page.evaluate(() => window.matchLobby.isWaitingForHost)).toBe(false);
+
+  // Escaping host waiting manually exits to lobby.
+  await page.evaluate(() => window.testConnection.emit('close'));
+  expect(await page.evaluate(() => window.matchLobby.isWaitingForHost)).toBe(true);
+  await page.keyboard.press('Escape');
   await expect(page.locator('#lobby')).toBeVisible();
   await expect(page.locator('#join-room')).toBeEnabled();
   await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(1);
@@ -811,9 +826,52 @@ test('real WebRTC room: remote control, authoritative score, disconnect', async 
   await host.locator('#game').click(); await host.keyboard.press('Space');
   await expect.poll(() => guest.evaluate(() => window.rallyGame.snapshot().paused)).toBe(true);
   await guest.screenshot({ path: 'test-results/online-match.png' });
-  await b.close(); await expect(host.locator('#lobby')).toBeVisible({ timeout: 20000 });
+  await b.close();
+  // Member disconnect switches slot 2 to COM immediately without aborting match.
+  await expect.poll(() => host.evaluate(() => window.matchLobby.assignment(2)), { timeout: 20000 }).toBe(0);
+  await expect.poll(() => host.evaluate(() => window.rallyGame.snapshot().players[2].human)).toBe(0);
+  // Game remains in progress; host can return to lobby using KeyR.
+  await expect(host.locator('#lobby')).toBeHidden();
+  await host.keyboard.press('KeyR');
+  await expect(host.locator('#lobby')).toBeVisible();
   await expect(host.locator('#player-slots select').nth(2)).toHaveValue('0');
   expect(errors).toEqual([]); await a.close();
+});
+
+test('member disconnect switches to COM and rejoining restores human control', async ({ browser }) => {
+  const a = await browser.newContext(), b = await browser.newContext();
+  const host = await a.newPage(), guest = await b.newPage();
+  const errors = []; host.on('pageerror', e => errors.push(e.message)); guest.on('pageerror', e => errors.push(e.message));
+  await host.goto('/'); await host.locator('#start').click(); await host.locator('#host-room').click();
+  await expect(host.locator('#invite-link')).not.toHaveValue('', { timeout: 25000 });
+  const invite = await host.locator('#invite-link').inputValue();
+
+  await guest.goto(invite); await guest.locator('#join-room').click();
+  await expect(host.locator('#lobby-help')).toContainText('2 / 4人', { timeout: 25000 });
+  await host.locator('#launch-match').click();
+  await expect(guest.locator('#lobby')).toBeHidden();
+
+  expect(await host.evaluate(() => window.matchLobby.assignment(2))).toBe(3);
+
+  await b.close();
+
+  await expect.poll(() => host.evaluate(() => window.matchLobby.assignment(2)), { timeout: 20000 }).toBe(0);
+  await expect.poll(() => host.evaluate(() => window.rallyGame.snapshot().players[2].human)).toBe(0);
+  await expect(host.locator('#lobby')).toBeHidden();
+
+  const c = await browser.newContext();
+  const guest2 = await c.newPage();
+  guest2.on('pageerror', e => errors.push(e.message));
+  await guest2.goto(invite);
+  await guest2.locator('#join-room').click();
+
+  await expect.poll(() => host.evaluate(() => window.matchLobby.assignment(2)), { timeout: 25000 }).toBe(3);
+  await expect.poll(() => host.evaluate(() => window.rallyGame.snapshot().players[2].human)).toBe(3);
+  await expect(guest2.locator('#lobby')).toBeHidden({ timeout: 10000 });
+
+  expect(errors).toEqual([]);
+  await c.close();
+  await a.close();
 });
 
 test("gamepad config dialog opens, switches player tabs 1P-4P, and binds keys", async ({ page }) => {

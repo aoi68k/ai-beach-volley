@@ -10,6 +10,8 @@
   let owners = [1, 0, 0, 0], members = [], peer, hostConnection;
   let online = false, guest = false, playing = false, self = '', room = '';
   let nextSend = 0, lastHost = 0, epoch = 0, connectionTimer;
+  let hostWaiting = false, hostReconnectTimer = null, hostTimeoutTimer = null;
+  const disconnectedSlots = new Set();
   const connections = new Map(), inputs = new Map();
   const message = text => { $('lobby-message').textContent = text; };
   function send(c, data) {
@@ -95,10 +97,50 @@
   function show() { if (!$('lobby').open) $('lobby').showModal(); render(); }
   function teardown(note) {
     epoch++; clearTimeout(connectionTimer);
+    clearTimeout(hostReconnectTimer); hostReconnectTimer = null;
+    clearTimeout(hostTimeoutTimer); hostTimeoutTimer = null;
+    hostWaiting = false;
+    disconnectedSlots.clear();
     online = false; guest = false; playing = false;
     const previous = peer; peer = null; previous?.destroy();
     connections.clear(); inputs.clear(); hostConnection = null; self = ''; room = ''; members = []; owners = [1, 0, 0, 0];
     game.stop(); render(); if (note) { message(note); show(); }
+  }
+  function resumeFromHostWaiting() {
+    if (!hostWaiting) return;
+    hostWaiting = false;
+    clearTimeout(hostReconnectTimer); hostReconnectTimer = null;
+    clearTimeout(hostTimeoutTimer); hostTimeoutTimer = null;
+    message('ホストが復帰しました。試合を再開します。');
+  }
+  function tryHostReconnect() {
+    if (!hostWaiting || !guest || !online) return;
+    if (peer?.disconnected && !peer.destroyed) {
+      try { peer.reconnect(); } catch (_) {}
+    }
+    if (peer && !peer.destroyed && room) {
+      try {
+        const c = peer.connect(room, { reliable: true, serialization: 'json' });
+        attach(c, epoch);
+        hostConnection = c;
+      } catch (_) {}
+    }
+    hostReconnectTimer = setTimeout(tryHostReconnect, 2500);
+  }
+  function handleHostLost(reason) {
+    if (!guest || !playing) {
+      teardown(reason || 'ホストとの接続が切れました。招待リンクから再参加してください。');
+      return;
+    }
+    if (hostWaiting) return;
+    hostWaiting = true;
+    message('ホストとの接続が途切れました。復帰を待機しています…');
+    clearTimeout(hostReconnectTimer);
+    clearTimeout(hostTimeoutTimer);
+    hostTimeoutTimer = setTimeout(() => {
+      teardown('ホストが復帰しませんでした。ロビーに戻ります。');
+    }, 60000);
+    tryHostReconnect();
   }
   function returnToLobby(note) {
     playing = false; inputs.clear(); game.stop(); sync(); show(); message(note);
@@ -123,15 +165,47 @@
       attach(c, generation);
     });
     peer.on('error', error => { if (generation === epoch) teardown(`接続できませんでした（${error.type || '通信エラー'}）。コードとネットワークを確認してください。`); });
-    peer.on('disconnected', () => { if (generation === epoch) teardown('接続サービスとの通信が切れました。部屋を作り直してください。'); });
+    peer.on('disconnected', () => {
+      if (generation !== epoch) return;
+      if (peer && !peer.destroyed) {
+        try { peer.reconnect(); return; } catch (_) {}
+      }
+      teardown('接続サービスとの通信が切れました。部屋を作り直してください。');
+    });
   }
   function invite(id) { const url = new URL(location.href); url.hash = ''; url.searchParams.set('room', id); return url.href; }
   function attach(c, generation) {
     c.on('open', () => {
       if (generation !== epoch) { c.close(); return; }
-      if (guest) { lastHost = performance.now(); return; }
-      if (playing || members.length >= 4 || connections.has(c.peer)) {
-        send(c, { type: 'rejected', reason: playing ? '試合中です。ロビーに戻ってから参加してください。' : '部屋は満員です。' }); setTimeout(() => c.close(), 300); return;
+      if (guest) {
+        lastHost = performance.now();
+        resumeFromHostWaiting();
+        return;
+      }
+      if (connections.has(c.peer) || members.length >= 4) {
+        send(c, { type: 'rejected', reason: '部屋は満員です。' }); setTimeout(() => c.close(), 300); return;
+      }
+      if (playing) {
+        let slot = -1;
+        for (const s of disconnectedSlots) {
+          if (owners[s] === 0) { slot = s; break; }
+        }
+        if (slot === -1) {
+          slot = [2, 1, 3].find(i => owners[i] === 0);
+        }
+        if (slot === undefined || slot === -1) {
+          send(c, { type: 'rejected', reason: '試合中です。空き枠がありません。' }); setTimeout(() => c.close(), 300); return;
+        }
+        disconnectedSlots.delete(slot);
+        owners[slot] = c.peer;
+        connections.set(c.peer, c); members.push({ id: c.peer }); inputs.set(c.peer, { ...idle(), at: performance.now() });
+        game.syncAssignments?.();
+        send(c, roomState());
+        send(c, { type: 'start' });
+        send(c, { type: 'state', state: game.snapshot() });
+        broadcast(roomState());
+        message('参加者が復帰しました。操作を再開します。');
+        return;
       }
       connections.set(c.peer, c); members.push({ id: c.peer }); inputs.set(c.peer, { ...idle(), at: performance.now() });
       const slot = [2, 1, 3].find(i => !owners[i]); if (slot !== undefined) owners[slot] = c.peer;
@@ -140,8 +214,10 @@
     c.on('data', data => {
       if (generation !== epoch || !data || typeof data !== 'object') return;
       if (guest) {
-        if (c !== hostConnection) return;
+        if (c !== hostConnection && c.peer === room) hostConnection = c;
+        else if (c !== hostConnection) return;
         lastHost = performance.now();
+        resumeFromHostWaiting();
         if (data.type === 'rejected') { teardown(data.reason); return; }
         if (data.type === 'lobby') {
           clearTimeout(connectionTimer); room = c.peer; members = data.members; owners = data.owners;
@@ -162,15 +238,33 @@
     });
     const lost = () => {
       if (generation !== epoch) return;
-      if (guest) { teardown('ホストとの接続が切れました。招待リンクから再参加してください。'); return; }
+      if (guest) {
+        if (c === hostConnection) {
+          handleHostLost('ホストとの接続が切れました。復帰を待機しています…');
+        }
+        return;
+      }
       if (connections.get(c.peer) !== c) return;
-      connections.delete(c.peer); inputs.delete(c.peer); members = members.filter(m => m.id !== c.peer); owners = owners.map(id => id === c.peer ? 0 : id);
-      returnToLobby('参加者が退出したためロビーに戻りました。空いた担当はCOMになりました。');
+      connections.delete(c.peer); inputs.delete(c.peer); members = members.filter(m => m.id !== c.peer);
+      const slot = owners.findIndex(id => id === c.peer);
+      if (playing) {
+        if (slot !== -1) {
+          disconnectedSlots.add(slot);
+          owners[slot] = 0;
+        }
+        game.syncAssignments?.();
+        broadcast(roomState());
+        message('参加者が切断しました。担当キャラをCOMに切り替えました。');
+      } else {
+        owners = owners.map(id => id === c.peer ? 0 : id);
+        returnToLobby('参加者が退出したためロビーに戻りました。空いた担当はCOMになりました。');
+      }
     };
     c.on('close', lost); c.on('error', lost);
   }
   window.matchLobby = {
     get online() { return online; }, get guest() { return online && guest; },
+    get isWaitingForHost() { return hostWaiting; },
     assignment(index) { return online ? (owners[index] ? index + 1 : 0) : owners[index]; },
     label(index) { const owner = owners[index]; return !owner ? 'COM' : `${online ? members.findIndex(m => m.id === owner) + 1 : owner}P`; },
     preset(values) { if (!online) { owners = [...values]; render(); } },
@@ -186,15 +280,25 @@
       const value = inputs.get(owner); return value && performance.now() - value.at < 500 ? value : idle();
     },
     command(code) {
-      if (guest) return;
+      if (guest) {
+        if (hostWaiting && (code === 'KeyR' || code === 'Escape')) {
+          teardown('ホスト待機を終了し、ロビーに戻りました。');
+        }
+        return;
+      }
       if (code === 'KeyR') returnToLobby('担当を変更して、もう一度試合を始められます。');
       if (code === 'Space') game.pause();
     },
     tick(now) {
       if (!online || now < nextSend) return; nextSend = now + 1000 / 30;
       if (guest) {
-        if (room && now - lastHost > 15000) { teardown('ホストの応答がありません。部屋に入り直してください。'); return; }
-        send(hostConnection, { type: 'input', input: $('lobby').open ? idle() : game.controller() });
+        if (room && !hostWaiting && now - lastHost > 5000) {
+          handleHostLost('ホストの応答がありません。復帰を待機しています…');
+          return;
+        }
+        if (!hostWaiting) {
+          send(hostConnection, { type: 'input', input: $('lobby').open ? idle() : game.controller() });
+        }
       } else {
         for (const [id, value] of inputs) if (now - value.at > 15000) { connections.get(id)?.close(); return; }
         broadcast(playing ? { type: 'state', state: game.snapshot() } : { type: 'heartbeat' });
