@@ -1105,18 +1105,16 @@ function comAction(p) {
   return touches === 0 ? 'receive' : touches === 1 ? 'set' : comShotType(ball);
 }
 
-function hit(p, set, forcedType, forward = false, feint = false, down = false, up = false) {
+function hit(p, set, forcedType, forward = false, back = false, down = false, up = false) {
   if (p.y < FLOOR) { p.airborneTouch = true; p.airborneActionTaken = true; p.airborneShotHeld = false; p.airborneSetHeld = false; }
   const assistReceive = !p.human && touchesBefore(p) === 0;
   let type =
     forcedType ||
     (p.human
       ? set
-        ? (p.y < FLOOR && up && !down ? 'loop' : 'set')
+        ? (p.y < FLOOR && back && !down ? 'feint' : 'set')
         : p.y < FLOOR
-          ? feint
-            ? 'feint'
-            : 'attack'
+          ? (back && !down ? 'loop' : 'attack')
           : 'receive'
       : comAction(p));
 
@@ -1607,9 +1605,9 @@ function decideComInput(p) {
       : pressure >= 2 ? Math.min(.65, .25 + pressure * .1) : 0;
     if (chance > 0 && Math.random() < chance) {
       if (blockerWaiting && Math.random() < 0.5) {
-        return { move, jump: true, up: true, shot: false, set: true, down: false, comIntent: 'loop' };
+        return { move: -playerForward(p), jump: true, up: false, shot: true, set: false, down: false, comIntent: 'loop' };
       }
-      return { move, jump, shot: true, set: false, down: false, comIntent: 'feint' };
+      return { move: -playerForward(p), jump: true, shot: false, set: true, down: false, comIntent: 'feint' };
     }
   }
   return { move, jump, shot, set: false, down: false, comIntent };
@@ -1759,12 +1757,14 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
   const input = inputOverride ?? (p.human ? readHumanInput(p, pads) : decideComInput(p));
   let { move, jump, shot, set, comIntent, down } = input;
   const isUp = Boolean(input.up || jump);
+  const forward = move * playerForward(p) > 0;
+  const back = move * playerForward(p) < 0;
   if (p.y < FLOOR) {
     if (p.airborneActionTaken) {
       shot = false;
       set = false;
     } else if (set) {
-      if (isUp) {
+      if (back) {
         p.airborneSetHeld = true;
       } else {
         p.airborneActionTaken = true;
@@ -1783,11 +1783,9 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
     p.airborneShotHeld = false;
     p.airborneSetHeld = false;
   }
-  const forward = move * playerForward(p) > 0;
-  const feint = move * playerForward(p) < 0;
   const opponentBall = p.side === 0 ? ball.x > NET : ball.x < NET;
 
-  if (set && !isUp && !(down && p.specials > 0) && p.blockFrames <= 0 && opponentBall && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0) {
+  if (set && !isUp && !back && !(down && p.specials > 0) && p.blockFrames <= 0 && opponentBall && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0) {
     p.blockFrames = FRAME_RULES.blockActive;
     showAction(p, 'block');
   }
@@ -1802,7 +1800,11 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
     set = false;
   }
 
-  const intendedShot = p.human ? (feint && !(down && p.specials > 0) ? 'feint' : 'attack') : (comIntent || comAction(p));
+  const intendedShot = p.human
+    ? set
+      ? (back && !(down && p.specials > 0) ? 'feint' : 'set')
+      : (back && !(down && p.specials > 0) ? 'loop' : 'attack')
+    : (comIntent || comAction(p));
   const inContactRange = inBallContactRange(p);
   // COM must reach the ball before planting its feet for a toss.
   p.setReady = !!((set || (shot && intendedShot === 'set')) && p.blockFrames <= 0
@@ -1878,7 +1880,7 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
     (shot || set) &&
     inContactRange
   ) {
-    hit(p, set, comIntent, forward, feint, down, isUp);
+    hit(p, set, comIntent, forward, back, down, isUp);
   }
 
   updatePlayerMotion(p, dt, grounded);

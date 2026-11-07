@@ -1113,9 +1113,9 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   assert(plan !== null);
 }
 
-// Feint topspin drive: progressive downward acceleration after clearing the net
+// Feint topspin drive: progressive downward acceleration after clearing the net (Airborne Back + B)
 {
-  run("mode=5;reset();running=true;players[0].x=540;players[0].y=350;ball.x=540;ball.y=311;hit(players[0],false,undefined,false,true,false);");
+  run("mode=5;reset();running=true;players[0].x=540;players[0].y=350;ball.x=540;ball.y=311;hit(players[0],true,undefined,false,true,false);");
   assert.equal(run("ball.lastShot"), "feint");
   assert.equal(run("ball.feintDrive"), 0);
 
@@ -1154,7 +1154,7 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   for (const side of [0, 1]) {
     for (const distFromNet of [40, 60, 80, 100]) {
       const px = side === 0 ? courtNet - distFromNet : courtNet + distFromNet;
-      run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],false,undefined,false,true,false);`);
+      run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],true,undefined,false,true,false);`);
       let landed = false;
       for (let step = 0; step < 90; step++) {
         run("updateBall(1/60);");
@@ -1168,10 +1168,10 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
     }
   }
 
-  // --- Loop Shot (Airborne Up + B) tests ---
-  // 1. Airborne Up + B triggers loop shot with LOOP! action pop and loop sound
+  // --- Loop Shot (Airborne Back + A) tests ---
+  // 1. Airborne Back + A triggers loop shot with LOOP! action pop and loop sound
   run("mode=5;reset();running=true;audioEvents=[];players[0].x=440;players[0].y=350;ball.x=440;ball.y=311;ball.vx=0;ball.vy=0;ball.lastSide=0;");
-  run("hit(players[0], true, undefined, false, false, false, true);"); // set=true, up=true
+  run("hit(players[0], false, undefined, false, true, false);"); // set=false, back=true
   assert.equal(run("ball.lastShot"), "loop");
   assert.equal(run("players[0].actionPop.action"), "loop");
   assert.equal(run("audioEvents.some(e => e.name === 'loop')"), true);
@@ -1187,7 +1187,7 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   // 4. Trajectory test for both sides: high clearance over net (Y <= 220), lands in opponent mid-court
   for (const side of [0, 1]) {
     const px = side === 0 ? courtNet - 90 : courtNet + 90;
-    run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],true,undefined,false,false,false,true);`);
+    run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],false,undefined,false,true,false);`);
     let crossedNet = false;
     let netHeight = 0;
     let landed = false;

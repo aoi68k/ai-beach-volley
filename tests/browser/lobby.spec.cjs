@@ -132,16 +132,17 @@ test('frame list reports strengths and speed limits from live settings', async (
   const categories = await page.locator('#frame-data-body td.frame-category').allTextContents();
   expect(categories.slice(0, 3)).toEqual(['地上A', '地上A', '地上A']);
   expect(categories.slice(3, 5)).toEqual(['地上B', '地上B']);
-  expect(categories.slice(5, 10)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A']);
-  expect(categories.slice(10, 14)).toEqual(['空中B', '空中B', '空中B', '空中B']);
-  expect(categories.slice(14, 20)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
-  expect(categories[20]).toBe('その他');
+  expect(categories.slice(5, 11)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A', '空中A']);
+  expect(categories.slice(11, 15)).toEqual(['空中B', '空中B', '空中B', '空中B']);
+  expect(categories.slice(15, 21)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
+  expect(categories[21]).toBe('その他');
   const row=name=>page.getByRole('rowheader',{name,exact:true}).locator('..');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
   await expect(row('パワーアタック（1sp）')).toContainText('地上 弱：初速900／理論225px');
   await expect(row('パワーアタック（1sp）')).toContainText('空中 強：初速1800／理論450px');
   await expect(row('アタック')).toContainText('横速度上限 720 → 1080');
+  await expect(row('ディープアタック')).toContainText('横速度上限 720 → 1080');
   await expect(row('クイック')).toContainText('横速度上限 1177 → 1350');
   await expect(row('トス')).toContainText('上向き 410');
   await expect(row('ハイセット')).toContainText('上向き 520');
@@ -153,6 +154,7 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(page.locator('#frame-data-landing')).toContainText('ジャンプ中のボタン操作は1ジャンプにつき1回まで');
   await expect(page.locator('#frame-data-landing')).toContainText('着地硬直（12F）');
   await expect(row('アタック')).toContainText('12F');
+  await expect(row('ディープアタック')).toContainText('12F');
   await expect(page.getByRole('rowheader', { name: 'ブロック（構え・空振り）' })).toHaveCount(0);
   await expect(row('キルブロック（ネット直上／相手側でブロック）')).toContainText('12F');
     await expect(row('キルブロック（ネット直上／相手側でブロック）')).toContainText('500〜560');
@@ -1151,7 +1153,7 @@ test("fullscreen toggle: button click and F key toggle arena presentation, label
   expect(errors).toEqual([]);
 });
 
-test("feint shot: airborne back plus A produces feint with strong topspin drive dropping over net", async ({ page }) => {
+test("feint shot: airborne back plus B produces feint with strong topspin drive dropping over net", async ({ page }) => {
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   await page.goto("/");
@@ -1178,9 +1180,9 @@ test("feint shot: airborne back plus A produces feint with strong topspin drive 
   });
 
   await page.keyboard.down("ArrowLeft");
-  await page.keyboard.down("KeyZ");
+  await page.keyboard.down("KeyX");
   await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.lastShot)).toBe("feint");
-  await page.keyboard.up("KeyZ");
+  await page.keyboard.up("KeyX");
   await page.keyboard.up("ArrowLeft");
 
   await expect.poll(() => page.evaluate(() => window._feintMaxDrive), { timeout: 3000 }).toBeGreaterThan(0);
@@ -1190,7 +1192,7 @@ test("feint shot: airborne back plus A produces feint with strong topspin drive 
   expect(errors).toEqual([]);
 });
 
-test("loop shot: airborne Up plus B produces gentle high-arc lob over net into opponent mid-court", async ({ page }) => {
+test("loop shot: airborne back plus A produces gentle high-arc lob over net into opponent mid-court", async ({ page }) => {
   const errors = [];
   page.on("pageerror", e => errors.push(e.message));
   await page.goto("/");
@@ -1224,12 +1226,12 @@ test("loop shot: airborne Up plus B produces gentle high-arc lob over net into o
     window.rallyGame.apply(s);
   });
 
-  // Hold ArrowUp + KeyX (B button)
-  await page.keyboard.down("ArrowUp");
-  await page.keyboard.down("KeyX");
+  // Hold ArrowLeft + KeyZ (Back + A button)
+  await page.keyboard.down("ArrowLeft");
+  await page.keyboard.down("KeyZ");
   await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.lastShot)).toBe("loop");
-  await page.keyboard.up("KeyX");
-  await page.keyboard.up("ArrowUp");
+  await page.keyboard.up("KeyZ");
+  await page.keyboard.up("ArrowLeft");
 
   // Speed has pace with drive (~450-600 px/s vs attack 720+ px/s)
   const speed = await page.evaluate(() => {

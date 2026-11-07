@@ -12,14 +12,15 @@
     ['地上B', 'ハイセット', '地上/空中 下＋B', '打球時', f(recovery.set), `下＋Bで自陣へ高く打ち上げるハイセット（高めのトス）。滞空時間が長く、味方の助走や攻撃タイミングを作りやすい。姿勢が残る間と構え中は地上の横移動・ジャンプ不可。ヒット姿勢は${f(r.tossContact)}。`],
 
     // 空中A
-    ['空中A', 'アタック', '空中 A（前＋Aで奥へ）', '着地時', f(r.landingRecovery), `前＋Aはネット頂上より上を狙い相手コート奥へ。空中でA長押し（${f(r.attackCharge)}継続）で最大弾速へチャージ。A解除でリセット。`],
+    ['空中A', 'アタック', '空中 A（前なし）', '着地時', f(r.landingRecovery), `相手コートの前〜中央を狙う標準スパイク。空中でA長押し（${f(r.attackCharge)}継続）で最大弾速へチャージ。A解除でリセット。`],
+    ['空中A', 'ディープアタック', '空中 前＋A', '着地時', f(r.landingRecovery), `前＋Aでネット頂上より上を狙い相手コート奥へ突き刺すロングスパイク。空中でA長押し（${f(r.attackCharge)}継続）で最大弾速へチャージ。A解除でリセット。`],
+    ['空中A', 'ループシュート', '空中 後ろ＋A', '着地時', f(r.landingRecovery), '相手のブロックやジャンプアタックが届かない高弾道で相手コートの中腹へ落とす技。ネット通過後はドライブがかかり急降下する。相手ブロック無効。'],
     ['空中A', 'クイック', 'トス／パワーレシーブ上昇中に空中 A', '着地時', f(r.landingRecovery), '味方トスまたはパワーレシーブが上昇中の早いタイミングで空中アタックすると自動発動。黄色い光。'],
     ['空中A', 'ダブルアタック', '味方の返球に空中 Aを重ねる', '着地時', f(r.landingRecovery), '味方が相手コートへ返球した球に、もう1人が空中でアタックを重ねると発動。オレンジの光。相手の入力硬直を増加させノックバック。'],
-    ['空中A', 'フェイント', '空中 後ろ＋A', '着地時', f(r.landingRecovery), 'ネット際へ落とす軟打。相手のブロック判定で防がれない（ブロック無効）。ネット通過後はドライブ（下向き加速度）がかかり、相手コートのネット際へ急降下する。'],
     ['空中A', 'パワーアタック（1sp）', '1sp所持・空中 下＋A', '着地時', f(r.landingRecovery), '青く発光する強力スパイク。受け手は後方へノックバック（地上受けは弱、空中受けは強）し、球も自陣へ高く弾ける。打球時に1sp消費。'],
 
     // 空中B
-    ['空中B', 'ループシュート', '空中 上＋B', '着地時', f(r.landingRecovery), '相手のブロックやジャンプアタックが届かない高弾道で相手コートの中腹へ落とす技。ネット通過後はドライブがかかり急降下する。相手ブロック無効。'],
+    ['空中B', 'フェイント', '空中 後ろ＋B', '着地時', f(r.landingRecovery), 'ネット際へ落とす軟打。相手のブロック判定で防がれない（ブロック無効）。ネット通過後はドライブ（下向き加速度）がかかり、相手コートのネット際へ急降下する。'],
     ['空中B', 'モズ落とし（1sp）', '1sp所持・空中 下＋B', '着地時', f(r.landingRecovery), '高く打ち上げ、相手コート上空で急降下する必殺トス。青く発光。打球時に1sp消費。'],
     ['空中B', 'キルブロック（ネット直上／相手側でブロック）', '空中 B（ネット直上・相手側で接触）', '着地時', f(r.landingRecovery), 'ボールがネットを越える前（相手コート側や白帯の真上）で捉えると、ネット越え補正が不要となり相手の足元砂浜へドカンと叩き落とす超高速ブロック（ドシャット）。'],
     ['空中B', 'ソフトブロック（自陣側でブロック）', '空中 B（自陣コート側で接触）', '着地時', f(r.landingRecovery), 'ボールがネットを越えて自陣側に入った後に捉えると、ネットの白帯を安全に飛び越えさせるため滞空時間が引き延ばされ、山なりにふわりと相手コートへ落ちる優しい弾道になる。'],
@@ -43,6 +44,7 @@
     'トス': ['なし', `上向き ${speeds.toss}（縦）`, '—'],
     'ハイセット': ['なし', `上向き ${speeds.highToss}（縦）`, '—'],
     'アタック': ['なし', cap(speeds.attack), '—'],
+    'ディープアタック': ['なし', cap(speeds.attack), '—'],
     'クイック': ['なし', cap(speeds.quick, speeds.quickMax ?? 1350), '—'],
     'ダブルアタック': [kb('中', knockback.double), cap(speeds.attack, Math.round(speeds.attack * speeds.chargeMultiplier)), '—'],
     'フェイント': ['なし', '可変（ネット際へ落とす軟打）', '750'],
@@ -90,7 +92,7 @@
   document.querySelector('#frame-data-basis').textContent = `1F = 1/${fps}秒。60F = 1秒。画面のリフレッシュレートに関係なく同じ時間で進み、一時停止中は進みません。`;
   document.querySelector('#frame-data-motion').textContent = '速度はゲーム内座標のpx/秒です。「横速度上限」は横成分の設定上限で、実際はネット・着地点に応じて調整します。球全体の速さは縦成分も含むため、重力や打球位置で変わります。「ドライブ効果」はネット通過後にボールが急降下する最大落下速度（px/秒）の強さです。';
   const landingEl = document.querySelector('#frame-data-landing');
-  if (landingEl) landingEl.textContent = `【ジャンプ操作と着地硬直】ジャンプ中のボタン操作は1ジャンプにつき1回までです。アタック・クイック・ダブル・フェイント・空中トス・モズ落とし・パワーアタック・ジャンプサーブ・ブロック等のジャンプ系操作の入力硬直は、空中でボールに触れた場合のみ着地時から発生する着地硬直（${f(r.landingRecovery)}）となります。空中でボールに触れなかった場合は着地硬直0です。`;
+  if (landingEl) landingEl.textContent = `【ジャンプ操作と着地硬直】ジャンプ中のボタン操作は1ジャンプにつき1回までです。アタック・ディープアタック・クイック・ダブル・ループシュート・フェイント・空中トス・モズ落とし・パワーアタック・ジャンプサーブ・ブロック等のジャンプ系操作の入力硬直は、空中でボールに触れた場合のみ着地時から発生する着地硬直（${f(r.landingRecovery)}）となります。空中でボールに触れなかった場合は着地硬直0です。`;
   document.querySelector('#frame-data-cooldown').textContent = `通常の再打球待ちは、人が操作するキャラは${f(r.humanCooldown)}、COMは${r.comCooldownMin}〜${f(r.comCooldownMax)}。入力硬直と同時に進むため、合計ではなく長い方が適用されます。`;
   document.querySelector('#frame-data-double').textContent = `ダブルアタックを受けると入力硬直は${r.doubleImpactMultiplier}倍＋ノックバック。レシーブ${f(recovery.receive*r.doubleImpactMultiplier)}、トス${f(recovery.set*r.doubleImpactMultiplier)}、ブロック／アタック／フェイント${f(recovery.attack*r.doubleImpactMultiplier)}。フライングは命中時の残り硬直×${r.doubleImpactMultiplier}です。パワーレシーブで受けた場合はノックバックと倍加硬直を無効化（${f(recovery.powerReceive)}）できます。`;
   document.querySelector('#frame-data-knockback').textContent = `ノックバックは3段階：弱${knockback.empoweredGround}（パワーアタック地上受球） ＜ 中${knockback.double}（ダブル・パワーサーブ） ＜ 強${knockback.empowered}（パワーアタック空中受球）。数値は後方への初速（px/秒）で、時間とともに減衰します。理論距離はコート端などの制限がない場合の目安です。パワーアタックは地上受けで弱・空中受けで強となり、受け手の入力硬直は地上受けで最低${f(Math.round(knockback.impactRecovery*0.75))}、空中受けで最低${f(knockback.impactRecovery)}です。パワーレシーブはこれらのノックバックを無効化できます。`;
