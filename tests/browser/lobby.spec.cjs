@@ -980,9 +980,7 @@ test("special activation produces screen dim, afterimages, shockwave ring and sp
   });
   await page.screenshot({ path: "test-results/special-power-receive-effect.png" });
 
-  await page.waitForTimeout(400);
-  const activeAfter = await page.evaluate(() => window.rallyGame.snapshot().specialActivation);
-  expect(activeAfter).toBeNull();
+  await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().specialActivation), { timeout: 3000 }).toBeNull();
 
   expect(errors).toEqual([]);
 });
@@ -1106,5 +1104,44 @@ test("fullscreen toggle: button click and F key toggle arena presentation, label
   await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(false);
   await expect(fsBtn.locator(".fs-text")).toHaveText("FULLSCREEN");
 
+  expect(errors).toEqual([]);
+});
+
+test("feint shot: airborne back plus A produces feint with strong topspin drive dropping over net", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+  await page.locator("#character-check").click();
+
+  await page.evaluate(() => {
+    window._feintMaxDrive = 0;
+    window._feintMaxVy = 0;
+    function monitor() {
+      const b = window.rallyGame.snapshot().ball;
+      if (b && b.lastShot === "feint") {
+        if ((b.feintDrive || 0) > window._feintMaxDrive) window._feintMaxDrive = b.feintDrive;
+        if ((b.vy || 0) > window._feintMaxVy) window._feintMaxVy = b.vy;
+      }
+      requestAnimationFrame(monitor);
+    }
+    requestAnimationFrame(monitor);
+
+    const s = window.rallyGame.snapshot();
+    const net = typeof NET !== "undefined" ? NET : 540;
+    Object.assign(s.players[0], { x: net - 60, y: 350, vx: 0, vy: 0 });
+    Object.assign(s.ball, { x: net - 50, y: 311, vx: 0, vy: 0 });
+    window.rallyGame.apply(s);
+  });
+
+  await page.keyboard.down("ArrowLeft");
+  await page.keyboard.down("KeyZ");
+  await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.lastShot)).toBe("feint");
+  await page.keyboard.up("KeyZ");
+  await page.keyboard.up("ArrowLeft");
+
+  await expect.poll(() => page.evaluate(() => window._feintMaxDrive), { timeout: 3000 }).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => window._feintMaxVy), { timeout: 3000 }).toBeGreaterThan(600);
+
+  await page.screenshot({ path: "test-results/feint-drive.png" });
   expect(errors).toEqual([]);
 });

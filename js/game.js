@@ -1606,7 +1606,7 @@ function updateBallSpin(dt) {
   if (!ball) return;
   const speed = Math.hypot(ball.vx, ball.vy);
   if (Math.abs(ball.vx) > 10) ball.spinDirection = Math.sign(ball.vx);
-  const spinBoost = (ball.lastShot === 'feint' && (ball.feintDrive ?? 0) > 0) ? 1.6 : 1;
+  const spinBoost = (ball.lastShot === 'feint' && (ball.feintDrive ?? 0) > 0) ? 2.4 : 1;
   const angularSpeed = (speed / ball.r * 0.18) * spinBoost;
   const turn = Math.PI * 2;
   ball.rotation = ((ball.rotation ?? 0) + angularSpeed * (ball.spinDirection || 1) * dt) % turn;
@@ -1636,8 +1636,8 @@ function updateBall(dt) {
     ball.vy += GRAVITY * dt;
     if (ball.serveVariant === 'high' && (ball.x - NET) * ball.vx > 0) ball.vy += 220 * dt;
     if (ball.lastShot === 'feint' && (ball.x - (NET + Math.sign(ball.vx) * NET_CLEAR_OFFSET)) * ball.vx > 0) {
-      ball.feintDrive = (ball.feintDrive || 0) + 2400 * dt;
-      ball.vy += (400 + ball.feintDrive) * dt;
+      ball.feintDrive = (ball.feintDrive || 0) + 3600 * dt;
+      ball.vy += (650 + ball.feintDrive) * dt;
     }
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;
