@@ -3283,46 +3283,76 @@ function drawBallTracker() {
   ctx.save();
   ctx.globalAlpha = alpha;
 
-  const markerW = 42;
-  const markerH = 20;
-  const clampedX = Math.max(markerW / 2 + 12, Math.min(VIEW_W - markerW / 2 - 12, screenX));
-  const markerY = 114;
+  const bubbleR = 13;
+  const clampedX = Math.max(bubbleR + 14, Math.min(VIEW_W - bubbleR - 14, screenX));
+  const bubbleY = 120;
 
   const glow = ballGlowColor();
 
-  // Downward pointer notch toward court
-  ctx.fillStyle = glow ? glow : '#102f43';
-  ctx.beginPath();
-  ctx.moveTo(clampedX - 5, markerY + markerH / 2);
-  ctx.lineTo(clampedX + 5, markerY + markerH / 2);
-  ctx.lineTo(clampedX, markerY + markerH / 2 + 5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Capsule container
-  ctx.fillStyle = '#102f43ea';
-  ctx.beginPath();
-  ctx.roundRect(clampedX - markerW / 2, markerY - markerH / 2, markerW, markerH, 10);
-  ctx.fill();
-
-  // Border and optional special glow
-  ctx.strokeStyle = glow || '#eff9e980';
-  ctx.lineWidth = glow ? 1.5 : 1;
-  if (glow) {
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 8;
-  }
-  ctx.stroke();
-  ctx.shadowBlur = 0;
-
-  // Mini ball icon
-  const iconX = clampedX - 9;
-  const iconY = markerY;
-  const iconR = 5.5;
+  // 1. Upward indicator arrow above the bubble (larger with smooth bobbing animation and crisp dark outline)
+  const bob = Math.sin(time * 6.5) * 3;
+  const pulse = 1 + Math.sin(time * 6.5) * 0.08;
+  const arrowY = bubbleY - bubbleR - 10 + bob;
+  const arrowColor = glow || (ball.vy > 40 ? '#ffaa5e' : '#5be7ff');
 
   ctx.save();
-  ctx.translate(iconX, iconY);
+  ctx.translate(clampedX, arrowY);
+  ctx.scale(pulse, pulse);
+
+  // Solid upward triangle arrow (16px wide, 11.5px tall)
+  ctx.beginPath();
+  ctx.moveTo(0, -7.5);
+  ctx.lineTo(8, 4);
+  ctx.lineTo(-8, 4);
+  ctx.closePath();
+
+  // Dark outline for high visibility against bright sky & clouds
+  ctx.strokeStyle = '#061724';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  ctx.fillStyle = arrowColor;
+  ctx.shadowColor = glow || arrowColor;
+  ctx.shadowBlur = 8;
+  ctx.fill();
+  ctx.restore();
+
+  // 2. Speech bubble underneath the arrow enclosing the ball
+  ctx.save();
+  ctx.shadowColor = '#020b1299';
+  ctx.shadowBlur = 8;
+  ctx.shadowOffsetY = 3;
+
+  ctx.beginPath();
+  ctx.arc(clampedX, bubbleY, bubbleR, 0.35 * Math.PI, 0.65 * Math.PI, true);
+  ctx.lineTo(clampedX, bubbleY + bubbleR + 5);
+  ctx.closePath();
+  ctx.fillStyle = '#0c2638f2';
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.strokeStyle = glow || '#3da8db';
+  ctx.lineWidth = glow ? 2 : 1.5;
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 10;
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 3. Mini ball icon inside the bubble
+  const iconR = 7.5;
+  ctx.save();
+  ctx.translate(clampedX, bubbleY);
   ctx.rotate(ball.rotation ?? 0);
+
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 12;
+  }
+
   if (ballArt.complete && ballArt.naturalWidth) {
     const sz = iconR * 2.16;
     ctx.drawImage(ballArt, -sz / 2, -sz / 2, sz, sz);
@@ -3335,25 +3365,6 @@ function drawBallTracker() {
     ctx.fillRect(-iconR * 0.8, -iconR * 0.25, iconR * 1.6, iconR * 0.5);
   }
   ctx.restore();
-
-  // Motion arrow (▲ rising, ● apex, ▼ falling)
-  const statusX = clampedX + 9;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '900 10px "Barlow Condensed", Impact, sans-serif';
-
-  if (ball.vy < -40) {
-    ctx.fillStyle = '#72d9ef';
-    ctx.fillText('▲', statusX, markerY);
-  } else if (ball.vy > 40) {
-    ctx.fillStyle = '#ff956e';
-    ctx.fillText('▼', statusX, markerY);
-  } else {
-    ctx.fillStyle = '#ffe58e';
-    ctx.beginPath();
-    ctx.arc(statusX, markerY, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
 
   ctx.restore();
 }

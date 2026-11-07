@@ -1049,6 +1049,22 @@ test("ball tracker appears below scoreboard when ball rises into upper screen", 
 
   // 3. Take a screenshot showing the tracker in action
   await page.screenshot({ path: "test-results/ball-tracker-active.png" });
+  const canvasBox = await page.locator("#game").boundingBox();
+  if (canvasBox) {
+    // Canvas internal VIEW_W = 960, VIEW_H = 540
+    // Tracker is around (540, 115)
+    const scaleX = canvasBox.width / 960;
+    const scaleY = canvasBox.height / 540;
+    await page.screenshot({
+      path: "test-results/ball-tracker-zoom.png",
+      clip: {
+        x: canvasBox.x + (540 - 50) * scaleX,
+        y: canvasBox.y + (120 - 50) * scaleY,
+        width: 100 * scaleX,
+        height: 90 * scaleY
+      }
+    });
+  }
 
   // 4. Place ball lower in normal play area (y = 350)
   await page.evaluate(() => {
