@@ -1764,136 +1764,6 @@ function rect(x, y, w, h, c) {
   ctx.fillRect(Math.round(x), Math.round(y), w, h);
 }
 
-function palm(x, y, s) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  for (let i = 0; i < 13; i++) {
-    rect(i * 2, -i * 13, 12, 16, '#537c68');
-  }
-  ctx.fillStyle = '#467d69';
-  for (let i = 0; i < 7; i++) {
-    const a = -Math.PI + i * 0.48;
-    ctx.beginPath();
-    ctx.moveTo(25, -160);
-    ctx.quadraticCurveTo(25 + Math.cos(a) * 85, -160 + Math.sin(a) * 60, 25 + Math.cos(a) * 130, -125 + Math.sin(a) * 65);
-    ctx.quadraticCurveTo(25 + Math.cos(a) * 65, -145 + Math.sin(a) * 35, 25, -160);
-    ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawProceduralPlayer(p) {
-  ctx.save();
-  ctx.translate(Math.round(p.x / 2) * 2, Math.round(p.y / 2) * 2);
-  ctx.scale(p.side ? -1 : 1, 1);
-
-  const outline = '#20394a';
-  const skin = '#e9a572';
-  const shade = '#bd704e';
-  const light = '#ffd1a0';
-  const team = p.side ? '#287bbd' : '#ef624a';
-  const dark = p.side ? '#194f86' : '#b83b41';
-  const highlight = p.side ? '#77d5e8' : '#ffad78';
-  const isRunning = Math.abs(p.vx) > 10 && p.y === FLOOR;
-  const step = isRunning ? Math.round(Math.sin(time * 17) * 4) * 2 : 0;
-
-  function block(x, y, w, h, c) {
-    rect(x, y, w, h, c);
-  }
-  function limb(x1, y1, x2, y2, width, c) {
-    const length = Math.hypot(x2 - x1, y2 - y1);
-    for (let i = 0; i <= length; i += 2) {
-      const t = i / (length || 1);
-      block(
-        Math.round((x1 + (x2 - x1) * t) / 2) * 2 - width / 2,
-        Math.round((y1 + (y2 - y1) * t) / 2) * 2 - width / 2,
-        width,
-        width,
-        c
-      );
-    }
-  }
-  function arm(a, b, c, d) {
-    limb(a, b, c, d, 12, outline);
-    limb(a, b, c, d, 8, skin);
-    limb(a - 2, b, c - 2, d, 2, light);
-  }
-
-  // Bent legs, dark outlines, lit shins and bare feet.
-  for (const [hip, knee, foot, dy] of [
-    [-8, -12, -16, step],
-    [8, 14, 18, -step]
-  ]) {
-    limb(hip, -29, knee, -15 + dy, 12, outline);
-    limb(knee, -15 + dy, foot, -4, 10, outline);
-    limb(hip, -29, knee, -15 + dy, 8, shade);
-    limb(knee, -15 + dy, foot, -4, 6, skin);
-    block(foot - 4, -4, 12, 4, outline);
-    block(foot - 2, -6, 10, 4, light);
-  }
-
-  // Jersey silhouette and layered pixel shading.
-  block(-16, -62, 32, 35, outline);
-  block(-14, -60, 28, 29, team);
-  block(-14, -56, 6, 25, dark);
-  block(8, -56, 6, 23, highlight);
-  block(-12, -32, 26, 13, outline);
-  block(-10, -30, 22, 9, dark);
-  block(0, -29, 3, 10, '#fff2d5');
-  block(-10, -33, 24, 3, '#fff2d5');
-  block(-6, -59, 12, 4, '#fff2d5');
-  block(-4, -58, 8, 6, skin);
-  block(-8, -46, 3, 10, '#fff2d5');
-  block(-4, -46, 7, 3, '#fff2d5');
-  block(0, -43, 3, 7, '#fff2d5');
-
-  const action = p.actionFrames > 0 ? p.action : null;
-  if (p.blockFrames > 0 || action === 'block' || action === 'set') {
-    arm(-14, -56, -17, -84);
-    arm(14, -56, 19, -84);
-    block(-22, -91, 12, 8, light);
-    block(14, -91, 12, 8, light);
-  } else if (action === 'attack' || action === 'quick' || action === 'double' || action === 'feint') {
-    arm(-14, -56, -25, -44);
-    arm(14, -56, 21, -91);
-    block(18, -98, 12, 8, light);
-    block(16, -73, 10, 4, team);
-  } else if (p.receiveReady || action === 'receive' || action === 'flying' || action === 'powerReceive') {
-    arm(-14, -55, 12, -41);
-    arm(14, -55, 29, -43);
-    block(24, -47, 10, 8, light);
-  } else {
-    arm(-14, -55, -21, -37 + (isRunning ? step : 0));
-    arm(14, -55, 24, -36 - (isRunning ? step : 0));
-  }
-
-  // Profile face, hair clusters, headband and small facial highlights.
-  block(-12, -86, 24, 25, outline);
-  block(-10, -83, 20, 20, skin);
-  block(-10, -78, 5, 15, shade);
-  block(7, -77, 7, 9, skin);
-  block(9, -75, 3, 3, light);
-  block(4, -78, 4, 4, outline);
-  block(5, -79, 2, 2, '#ffffff');
-  block(6, -67, 6, 2, shade);
-  block(-14, -88, 24, 8, outline);
-  block(-12, -92, 9, 6, outline);
-  block(-4, -94, 10, 6, outline);
-  block(5, -90, 9, 6, outline);
-  block(-12, -84, 7, 14, outline);
-  block(-9, -88, 7, 4, '#79533e');
-  block(0, -90, 6, 4, '#9c6744');
-  block(-13, -82, 26, 4, highlight);
-  block(-20, -82, 8, 4, team);
-  block(-24, -78, 10, 4, dark);
-  if ((p.index ?? players.indexOf(p)) % 2) {
-    block(-18, -84, 8, 15, outline);
-    block(-22, -78, 9, 14, '#79533e');
-  }
-  ctx.restore();
-}
-
 function drawPlayer(p) {
   const index = p.index ?? players.indexOf(p);
   const art = animatedPlayerArt[index];
@@ -1911,7 +1781,6 @@ function drawPlayer(p) {
     drawPlayerSprite(p, p.x, p.y, 1, null, pose);
     return;
   }
-  drawProceduralPlayer(p);
 }
 
 // Animation clocks belong to each athlete, not the global scenery clock.
@@ -2305,7 +2174,6 @@ function updateCamera(dt, snap = false) {
 }
 
 function drawScenery() {
-  const drift = 0;
   if (beachArt.complete && beachArt.naturalWidth) {
     const iw = beachArt.naturalWidth;
     const ih = beachArt.naturalHeight;
@@ -2356,45 +2224,31 @@ function drawScenery() {
         offsetSand, yShoreline, scaledWidth, H - yShoreline);
     }
   } else {
-    const sky = ctx.createLinearGradient(0, 0, 0, 420);
-    sky.addColorStop(0, '#80bbb7');
-    sky.addColorStop(0.7, '#f1d8ab');
-    sky.addColorStop(1, '#f8dfab');
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, H);
+    // Clean tropical palette fallback while tropical-beach.png is loading
+    const { horizon, shoreline } = RASTER_SCENERY;
+    const rawYHorizon = (horizon * H - camera.y) * camera.zoom;
+    const rawYShoreline = (shoreline * H - camera.y) * camera.zoom;
+    const yHorizon = Math.max(0, Math.min(H, rawYHorizon));
+    const yShoreline = Math.max(yHorizon, Math.min(H, rawYShoreline));
 
-    ctx.fillStyle = '#fff0b8';
-    ctx.beginPath();
-    ctx.arc(878 + drift * 0.2, 150, 54, 0, Math.PI * 2);
-    ctx.fill();
-
-    for (const [x, y, w] of [
-      [80, 80, 155],
-      [380, 130, 120],
-      [1030, 65, 130]
-    ]) {
-      rect(x + drift, y, w, 9, '#e7e6cf');
-      rect(x + 20 + drift, y - 9, w - 55, 9, '#e7e6cf');
+    if (yHorizon > 0) {
+      const sky = ctx.createLinearGradient(0, 0, 0, yHorizon);
+      sky.addColorStop(0, '#3ba8df');
+      sky.addColorStop(1, '#9ee5f5');
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, VIEW_W, yHorizon);
     }
-
-    ctx.fillStyle = '#78a9a0';
-    ctx.beginPath();
-    ctx.moveTo(0, 310);
-    ctx.lineTo(80 + drift * 0.4, 240);
-    ctx.lineTo(210, 280);
-    ctx.lineTo(320, 310);
-    ctx.fill();
-
-    rect(0, 310, W, 145, '#599e9e');
-    for (let i = 0; i < 9; i++) {
-      const y = 320 + i * 14;
-      rect(((time * (i + 1) * 4) % 150) - 150, y, 1350, 2, i % 2 ? '#90c5b5' : '#72b4ac');
+    if (yShoreline > yHorizon) {
+      const sea = ctx.createLinearGradient(0, yHorizon, 0, yShoreline);
+      sea.addColorStop(0, '#108098');
+      sea.addColorStop(1, '#1fb3c4');
+      ctx.fillStyle = sea;
+      ctx.fillRect(0, yHorizon, VIEW_W, yShoreline - yHorizon);
     }
-    rect(0, 425, W, 195, '#e9cb91');
-    rect(0, 440, W, 5, '#f8e3b6');
-    rect(0, 453, W, 3, '#cdb782');
-    palm(-10 + drift, 430, 1.6);
-    palm(1100 + drift * 1.4, 440, 1.25);
+    if (yShoreline < H) {
+      ctx.fillStyle = '#edd8a4';
+      ctx.fillRect(0, yShoreline, VIEW_W, H - yShoreline);
+    }
   }
 }
 
@@ -2407,9 +2261,7 @@ function drawWorldTerrain() {
   // The raster backdrop already includes the sand. Only the loading fallback
   // needs a fill here; court markings and shadows remain in world space.
   if (!beachArt.complete || !beachArt.naturalWidth) {
-    rect(0, 425, W, H - 425, '#e9cb91');
-    rect(0, 440, W, 5, '#f8e3b6');
-    rect(0, 453, W, 3, '#cdb782');
+    rect(0, 425, W, H - 425, '#edd8a4');
   }
 
   // World-space court, players, net and ball; HUD stays in screen space.
@@ -2457,6 +2309,8 @@ const PLAYER_LABEL_COLORS = {
 const LABEL_WIDTH_CACHE = {};
 
 function drawPlayerFootLabel(p, index) {
+  const art = animatedPlayerArt[index];
+  if (!art?.complete && !playerArt.complete) return;
   const label = characterCheck ? '1P' : window.matchLobby?.label(index) ?? (p.human ? `${p.human}P` : 'COM');
   const human = label !== 'COM';
   ctx.save();
@@ -2945,10 +2799,12 @@ function drawAttackBall(shape) {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(ballArt, -1.08, -1.08, 2.16, 2.16);
   } else {
-    ctx.fillStyle = '#ed7642';
-    ctx.fillRect(-1, -.55, 2, .6);
-    ctx.fillStyle = '#168b9b';
-    ctx.fillRect(-.2, -1, .5, 2);
+    ctx.fillStyle = '#fff4d8';
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3da8db';
+    ctx.fillRect(-0.8, -0.2, 1.6, 0.4);
   }
   ctx.restore();
   ctx.strokeStyle = ballGlowColor() ?? '#244c60';
