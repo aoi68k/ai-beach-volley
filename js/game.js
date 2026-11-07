@@ -2999,7 +2999,7 @@ function drawMatchCallout(isPaused) {
   const isHostWaiting = Boolean(window.matchLobby?.isWaitingForHost);
   const centerY = isPaused ? 280 : 192;
   const accent = isHostWaiting ? '#ffb347' : isPaused ? '#70d9ef' : '#ff956e';
-  if (isPaused) rect(0, 0, W, H, '#061c2c99');
+  if (isPaused) rect(0, 0, VIEW_W, H, '#061c2c99');
   ctx.translate(VIEW_W / 2, centerY);
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
