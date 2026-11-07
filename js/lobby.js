@@ -6,7 +6,7 @@
   const invited = new URL(location.href).searchParams.get('room');
   const participantView = () => !!invited || guest;
   const names = ['コーラル / 男性', 'コーラル / 女性', 'ブルー / 男性', 'ブルー / 女性'];
-  const idle = () => ({ move: 0, jump: false, shot: false, set: false, down: false });
+  const idle = () => ({ move: 0, jump: false, up: false, shot: false, set: false, down: false });
   let owners = [1, 0, 0, 0], members = [], peer, hostConnection;
   let online = false, guest = false, playing = false, self = '', room = '';
   let nextSend = 0, lastHost = 0, epoch = 0, connectionTimer;
@@ -233,7 +233,7 @@
       if (data.type === 'input') {
         const v = data.input;
         if (!v || !Number.isFinite(v.move)) return;
-        inputs.set(c.peer, { move: Math.max(-1, Math.min(1, v.move)), jump: v.jump === true, shot: v.shot === true, set: v.set === true, down: v.down === true, at: performance.now() });
+        inputs.set(c.peer, { move: Math.max(-1, Math.min(1, v.move)), jump: v.jump === true, up: v.up === true || v.jump === true, shot: v.shot === true, set: v.set === true, down: v.down === true, at: performance.now() });
       }
     });
     const lost = () => {

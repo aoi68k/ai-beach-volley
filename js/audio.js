@@ -397,6 +397,13 @@
       tone({ f0: 1280, f1: 540, dur: 0.075, vol: 0.07, type: 'sine', attack: 0.002, wet: 0.28 });
     },
 
+    loop: () => {
+      // Gentle airy fingertip scoop + soaring melodic whistle/flute rise
+      burst({ f0: 2200, f1: 950, dur: 0.04, vol: 0.09, filterType: 'bandpass', q: 2.2, wet: 0.16 });
+      tone({ f0: 440, f1: 880, dur: 0.18, vol: 0.16, type: 'sine', attack: 0.003, wet: 0.32 });
+      tone({ f0: 880, f1: 1320, dur: 0.16, vol: 0.09, type: 'triangle', delay: 0.015, wet: 0.35 });
+    },
+
     block: () => {
       // Solid two-hand wall collision + resonant thud + defensive metallic ring
       tone({ f0: 195, f1: 54, dur: 0.16, vol: 0.32, type: 'sine', attack: 0.002, wet: 0.16 });

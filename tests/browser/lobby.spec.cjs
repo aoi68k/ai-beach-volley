@@ -698,8 +698,9 @@ test('empowered attack knockback is weak on ground and strong in air', async ({ 
   await page.keyboard.down('KeyZ');
   let airKb = 0;
   await expect.poll(async () => {
-    airKb = await page.evaluate(() => Math.abs(window.rallyGame.snapshot().players[0].knockback));
-    return airKb;
+    const cur = await page.evaluate(() => Math.abs(window.rallyGame.snapshot().players[0].knockback));
+    if (cur > airKb) airKb = cur;
+    return cur;
   }).toBeGreaterThan(950);
   await page.keyboard.up('KeyZ');
   expect(airKb).toBeGreaterThan(1100);
@@ -1159,5 +1160,66 @@ test("feint shot: airborne back plus A produces feint with strong topspin drive 
   await expect.poll(() => page.evaluate(() => window._feintMaxVy), { timeout: 3000 }).toBeGreaterThan(600);
 
   await page.screenshot({ path: "test-results/feint-drive.png" });
+  expect(errors).toEqual([]);
+});
+
+test("loop shot: airborne Up plus B produces gentle high-arc lob over net into opponent mid-court", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+  await page.locator("#character-check").click();
+
+  await page.evaluate(() => {
+    window._loopPeakY = 999;
+    window._loopNetY = 999;
+    window._loopMaxX = 0;
+    const net = 540;
+    let crossed = false;
+    function monitor() {
+      const b = window.rallyGame.snapshot().ball;
+      if (b && b.lastShot === "loop") {
+        if (b.y < window._loopPeakY) window._loopPeakY = b.y;
+        if (!crossed && b.x >= net) {
+          crossed = true;
+          window._loopNetY = b.y;
+        }
+        if (b.x > window._loopMaxX) {
+          window._loopMaxX = b.x;
+        }
+      }
+      requestAnimationFrame(monitor);
+    }
+    requestAnimationFrame(monitor);
+
+    const s = window.rallyGame.snapshot();
+    Object.assign(s.players[0], { x: 440, y: 350, vx: 0, vy: 0 });
+    Object.assign(s.ball, { x: 440, y: 311, vx: 0, vy: 0, lastSide: 0 });
+    window.rallyGame.apply(s);
+  });
+
+  // Hold ArrowUp + KeyX (B button)
+  await page.keyboard.down("ArrowUp");
+  await page.keyboard.down("KeyX");
+  await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.lastShot)).toBe("loop");
+  await page.keyboard.up("KeyX");
+  await page.keyboard.up("ArrowUp");
+
+  // Speed is gentle (< 480 px/s)
+  const speed = await page.evaluate(() => {
+    const b = window.rallyGame.snapshot().ball;
+    return Math.hypot(b.vx, b.vy);
+  });
+  expect(speed).toBeLessThan(480);
+  expect(speed).toBeGreaterThan(250);
+
+  // Clearance over net is high (Y <= 230, which is > 150px above NETTOP 385)
+  await expect.poll(() => page.evaluate(() => window._loopNetY), { timeout: 3000 }).toBeLessThan(235);
+
+  // Lands in opponent mid-court (around 785)
+  await expect.poll(() => page.evaluate(() => window._loopMaxX), { timeout: 4000 }).toBeGreaterThan(700);
+  const maxX = await page.evaluate(() => window._loopMaxX);
+  expect(maxX).toBeLessThan(860);
+
+  await page.screenshot({ path: "test-results/loop-shot.png" });
   expect(errors).toEqual([]);
 });

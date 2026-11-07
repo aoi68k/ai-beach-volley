@@ -64,7 +64,7 @@ const FLYING_DIVE_SPEED = 520;
 const FLYING_TRIGGER_DISTANCE = 75;
 const ACTION_RECOVERY_FRAMES = Object.freeze({
   receive: 24, powerReceive: 10, flying: FLYING_TOTAL_FRAMES, set: 18,
-  attack: 12, quick: 12, double: 12, feint: 12, block: 12
+  attack: 12, quick: 12, double: 12, feint: 12, block: 12, loop: 12
 });
 function advanceFrames(remaining, dt) {
   const next = remaining - dt * GAME_FPS;
@@ -130,6 +130,7 @@ const ACTION_LABELS = {
   double: 'ダブルアタック',
   quick: 'クイック',
   feint: 'フェイント',
+  loop: 'ループシュート',
   block: 'ブロック',
   mozu: 'モズ落とし',
   empowered: 'パワーアタック',
@@ -146,6 +147,7 @@ const ACTION_POP_STYLES = {
   double: { text: 'DOUBLE!', color: '#fff07a', dark: '#f3a52c' },
   quick: { text: 'QUICK!', color: '#ffcf67', dark: '#f07e36' },
   feint: { text: 'FEINT!', color: '#dcc5ff', dark: '#9873cc' },
+  loop: { text: 'LOOP!', color: '#9ef0ff', dark: '#249ec2' },
   block: { text: 'BLOCK!', color: '#b8f58b', dark: '#54b899' },
   mozu: { text: 'MOZU DROP!', color: '#80dfff', dark: '#2876df' },
   empowered: { text: 'POWER ATTACK!', color: '#80dfff', dark: '#2876df' },
@@ -860,14 +862,14 @@ function comAction(p) {
   return touches === 0 ? 'receive' : touches === 1 ? 'set' : comShotType(ball);
 }
 
-function hit(p, set, forcedType, forward = false, feint = false, down = false) {
-  if (p.y < FLOOR) { p.airborneTouch = true; p.airborneActionTaken = true; p.airborneShotHeld = false; }
+function hit(p, set, forcedType, forward = false, feint = false, down = false, up = false) {
+  if (p.y < FLOOR) { p.airborneTouch = true; p.airborneActionTaken = true; p.airborneShotHeld = false; p.airborneSetHeld = false; }
   const assistReceive = !p.human && touchesBefore(p) === 0;
   let type =
     forcedType ||
     (p.human
       ? set
-        ? 'set'
+        ? (p.y < FLOOR && up && !down ? 'loop' : 'set')
         : p.y < FLOOR
           ? feint
             ? 'feint'
@@ -909,16 +911,20 @@ function hit(p, set, forcedType, forward = false, feint = false, down = false) {
         ? p.side
           ? NET - 150
           : NET + 150
-        : ownTarget
+        : type === 'loop'
           ? p.side
-            ? NET + 95
-            : NET - 95
-          : p.side
-            ? 180 + Math.random() * 230
-            : NET + 190 + Math.random() * 230;
+            ? NET - 245 + (Math.random() - 0.5) * 40
+            : NET + 245 + (Math.random() - 0.5) * 40
+          : ownTarget
+            ? p.side
+              ? NET + 95
+              : NET - 95
+            : p.side
+              ? 180 + Math.random() * 230
+              : NET + 190 + Math.random() * 230;
 
   const air = type === 'attack';
-  let duration = type === 'feint' ? 0.75 : set ? 1.05 : air ? 0.75 : type === 'flying' ? 1.6 : 1.25;
+  let duration = type === 'loop' ? 1.45 : type === 'feint' ? 0.75 : set ? 1.05 : air ? 0.75 : type === 'flying' ? 1.6 : 1.25;
   const endY = FLOOR - 14;
   const tossSpeed = isPowerReceive ? TOSS_SPEEDS.powerReceive : down ? TOSS_SPEEDS.high : TOSS_SPEEDS.normal;
 
@@ -929,7 +935,7 @@ function hit(p, set, forcedType, forward = false, feint = false, down = false) {
   // Lengthen a return when needed so gravity carries it over the top of the net.
   const fraction = (NET - ball.x) / (target - ball.x);
   if (!ownTarget && fraction > 0 && fraction < 1) {
-    const clearance = NETTOP - ball.r - (type === 'feint' ? 20 : 10);
+    const clearance = NETTOP - ball.r - (type === 'loop' ? 165 : type === 'feint' ? 20 : 10);
     const needed = (2 * ((1 - fraction) * ball.y + fraction * endY - clearance)) / (GRAVITY * fraction * (1 - fraction));
     duration = Math.max(duration, Math.sqrt(Math.max(0, needed)));
   }
@@ -1194,7 +1200,7 @@ function readController(controller, pads) {
     }
   }
 
-  return { move, jump, shot, set, down };
+  return { move, jump, up: jump, shot, set, down };
 }
 
 function comBlockInput(p) {
@@ -1337,7 +1343,12 @@ function decideComInput(p) {
     const pressure = p.blockPressure ?? 0;
     const chance = blockerWaiting ? Math.min(.8, .25 + pressure * .15)
       : pressure >= 2 ? Math.min(.65, .25 + pressure * .1) : 0;
-    if (chance > 0 && Math.random() < chance) return { move, jump, shot: true, set: false, down: false, comIntent: 'feint' };
+    if (chance > 0 && Math.random() < chance) {
+      if (blockerWaiting && Math.random() < 0.5) {
+        return { move, jump: true, up: true, shot: false, set: true, down: false, comIntent: 'loop' };
+      }
+      return { move, jump, shot: true, set: false, down: false, comIntent: 'feint' };
+    }
   }
   return { move, jump, shot, set: false, down: false, comIntent };
 }
@@ -1485,12 +1496,20 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
 
   const input = inputOverride ?? (p.human ? readHumanInput(p, pads) : decideComInput(p));
   let { move, jump, shot, set, comIntent, down } = input;
+  const isUp = Boolean(input.up || jump);
   if (p.y < FLOOR) {
     if (p.airborneActionTaken) {
       shot = false;
       set = false;
     } else if (set) {
+      if (isUp) {
+        p.airborneSetHeld = true;
+      } else {
+        p.airborneActionTaken = true;
+      }
+    } else if (p.airborneSetHeld) {
       p.airborneActionTaken = true;
+      p.airborneSetHeld = false;
     } else if (shot) {
       p.airborneShotHeld = true;
     } else if (p.airborneShotHeld) {
@@ -1500,12 +1519,13 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
   } else {
     p.airborneActionTaken = false;
     p.airborneShotHeld = false;
+    p.airborneSetHeld = false;
   }
   const forward = move * playerForward(p) > 0;
   const feint = move * playerForward(p) < 0;
   const opponentBall = p.side === 0 ? ball.x > NET : ball.x < NET;
 
-  if (set && !(down && p.specials > 0) && p.blockFrames <= 0 && opponentBall && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0) {
+  if (set && !isUp && !(down && p.specials > 0) && p.blockFrames <= 0 && opponentBall && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0) {
     p.blockFrames = FRAME_RULES.blockActive;
     showAction(p, 'block');
   }
@@ -1596,7 +1616,7 @@ function updateActivePlayer(p, dt, pads, inputOverride = null) {
     (shot || set) &&
     inContactRange
   ) {
-    hit(p, set, comIntent, forward, feint, down);
+    hit(p, set, comIntent, forward, feint, down, isUp);
   }
 
   updatePlayerMotion(p, dt, grounded);
@@ -1985,8 +2005,8 @@ function playerSpritePose(p) {
   if (action === 'receive' || action === 'powerReceive') return (p.receiveAge ?? 0) < seconds(FRAME_RULES.receiveContact)
     ? { receive: true, frame: 1 } : { legacy: true, frame: 3 };
   if (p.y >= FLOOR && p.landTime > 0) return { row: 3, frame: 5 };
-  if (['attack', 'quick', 'double', 'feint'].includes(action) && (p.attackAge ?? 1) < ATTACK_ANIMATION_DURATION) {
-    return { row: 2, frame: action === 'feint'
+  if (['attack', 'quick', 'double', 'feint', 'loop'].includes(action) && (p.attackAge ?? 1) < ATTACK_ANIMATION_DURATION) {
+    return { row: 2, frame: (action === 'feint' || action === 'loop')
       ? Math.min(5, Math.floor((p.attackAge ?? 0) / 0.06))
       : (p.attackAge ?? 0) < seconds(FRAME_RULES.attackContact) ? 4 : 5 };
   }
@@ -3342,7 +3362,7 @@ window.rallyGame = {
       receivedAudioSequence = event.id;
       if (s.time - event.time < 0.5) {
         window.rallyAudio?.play(event.name);
-        if (['attack', 'receive', 'powerReceive', 'serve', 'set', 'double', 'quick', 'mozu', 'empowered', 'block'].includes(event.name)) {
+        if (['attack', 'receive', 'powerReceive', 'serve', 'set', 'double', 'quick', 'mozu', 'empowered', 'block', 'feint', 'loop'].includes(event.name)) {
           spawnGuestHitParticles();
         }
       }

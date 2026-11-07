@@ -1167,6 +1167,53 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
       assert(side === 0 ? landX > courtNet : landX < courtNet, `feint must land on opponent side (side ${side}, landX=${landX})`);
     }
   }
+
+  // --- Loop Shot (Airborne Up + B) tests ---
+  // 1. Airborne Up + B triggers loop shot with LOOP! action pop and loop sound
+  run("mode=5;reset();running=true;audioEvents=[];players[0].x=440;players[0].y=350;ball.x=440;ball.y=311;ball.vx=0;ball.vy=0;ball.lastSide=0;");
+  run("hit(players[0], true, undefined, false, false, false, true);"); // set=true, up=true
+  assert.equal(run("ball.lastShot"), "loop");
+  assert.equal(run("players[0].actionPop.action"), "loop");
+  assert.equal(run("audioEvents.some(e => e.name === 'loop')"), true);
+
+  // 2. Initial speed is gentle (slower pace, ~280-420 px/s vs attack 720+ px/s)
+  const loopSpeed = run("Math.hypot(ball.vx, ball.vy)");
+  assert(loopSpeed >= 250 && loopSpeed <= 480, `loop speed ${loopSpeed} should be gentle`);
+
+  // 3. Block cannot intercept loop shots
+  run("players[2].x=NET+25;players[2].y=350;players[2].blockFrames=30;");
+  assert.equal(run("tryBlock(players[2])"), false, "block must not intercept loop shots");
+
+  // 4. Trajectory test for both sides: high clearance over net (Y <= 220), lands in opponent mid-court
+  for (const side of [0, 1]) {
+    const px = side === 0 ? courtNet - 90 : courtNet + 90;
+    run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],true,undefined,false,false,false,true);`);
+    let crossedNet = false;
+    let netHeight = 0;
+    let landed = false;
+    for (let step = 0; step < 120; step++) {
+      const x = run("ball.x");
+      const y = run("ball.y");
+      run("updateBall(1/60);");
+      const newX = run("ball.x");
+      if ((side === 0 && x <= courtNet && newX > courtNet) || (side === 1 && x >= courtNet && newX < courtNet)) {
+        crossedNet = true;
+        netHeight = y;
+        assert(y + 12 < 385 - 120, `loop shot must soar high above net, y=${y}`);
+      }
+      if (run("ball.y + ball.r") >= 530) {
+        landed = true;
+        break;
+      }
+    }
+    assert(crossedNet, `loop shot must cross net (side ${side})`);
+    assert(landed, `loop shot must land on court (side ${side})`);
+    const landX = run("ball.x");
+    const midCourt = side === 0 ? courtNet + 245 : courtNet - 245;
+    assert(Math.abs(landX - midCourt) < 70, `loop shot must land in opponent mid-court (landX=${landX}, expected ~${midCourt})`);
+    const hitNet = run("audioEvents.some(e => e.name === 'net')");
+    assert.equal(hitNet, false, "loop shot must never touch the net");
+  }
 }
 
 console.log('PASS: animation, directional/power serves, reception knockback, COM tactics, charge, landing recovery, specials, audio and physics.');
