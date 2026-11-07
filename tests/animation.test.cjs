@@ -70,7 +70,7 @@ const sandbox = {
 
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../assets/characters/idle-alignment.js'), 'utf8'), sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../game.js'), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/game.js'), 'utf8'), sandbox);
 
 const run = code => vm.runInContext(code, sandbox);
 const pose = () => JSON.parse(run('JSON.stringify(playerSpritePose(players[0]))'));
@@ -282,8 +282,8 @@ for (let athlete = 0; athlete < 4; athlete++) {
   assert.equal(draws.at(-1)[1], 0);
   run(`selectedRunArt[${athlete}].complete=true;`);
 }
-assert(!fs.readFileSync('game.js', 'utf8').includes('back-dash'));
-assert(!fs.readFileSync('game.js', 'utf8').includes('-run-v4'));
+assert(!fs.readFileSync('js/game.js', 'utf8').includes('back-dash'));
+assert(!fs.readFileSync('js/game.js', 'utf8').includes('-run-v4'));
 assert(!fs.readFileSync('character-preview.html', 'utf8').includes('-run-v4'));
 // The block hitbox selects fixed source cell 3; recoveryFrames selects source cell 5.
 for (let athlete = 0; athlete < 4; athlete++) {

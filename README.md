@@ -3,6 +3,8 @@
 真横から見る 2対2 ビーチバレーのブラウザ対戦ゲーム。  
 ビルドや外部ライブラリのインストールは不要で、`index.html` をブラウザで開くだけですぐにプレイできます。
 
+![SUNSET RALLY ゲーム画面](./assets/gameplay-preview.png)
+
 ---
 
 ## 🎮 ゲーム概要 & ルール
@@ -164,11 +166,11 @@ npm run test:browser
 
 ### プロジェクト構成
 - [index.html](file:///s:/work/ai-beachvolley/index.html): メイン画面・ゲームキャンバス・UI
-- [game.js](file:///s:/work/ai-beachvolley/game.js): ゲームループ、物理演算、描画処理、COM思考ロジック
-- [style.css](file:///s:/work/ai-beachvolley/style.css): レトロスポーツ中継風UIスタイル、GPUレイヤー最適化
-- [audio.js](file:///s:/work/ai-beachvolley/audio.js): Web Audio API による効果音合成エンジン
-- [gamepad-config.js](file:///s:/work/ai-beachvolley/gamepad-config.js): ゲームパッド設定UI・入力リマッピング
-- [lobby.js](file:///s:/work/ai-beachvolley/lobby.js): PeerJS を用いた P2P ルーム管理・通信同期
-- [frame-data.js](file:///s:/work/ai-beachvolley/frame-data.js): ゲーム内フレームデータ表生成
+- [js/game.js](file:///s:/work/ai-beachvolley/js/game.js): ゲームループ、物理演算、描画処理、COM思考ロジック
+- [css/style.css](file:///s:/work/ai-beachvolley/css/style.css): レトロスポーツ中継風UIスタイル、GPUレイヤー最適化
+- [js/audio.js](file:///s:/work/ai-beachvolley/js/audio.js): Web Audio API による効果音合成エンジン
+- [js/gamepad-config.js](file:///s:/work/ai-beachvolley/js/gamepad-config.js): ゲームパッド設定UI・入力リマッピング
+- [js/lobby.js](file:///s:/work/ai-beachvolley/js/lobby.js): PeerJS を用いた P2P ルーム管理・通信同期
+- [js/frame-data.js](file:///s:/work/ai-beachvolley/js/frame-data.js): ゲーム内フレームデータ表生成
 - [character-preview.html](file:///s:/work/ai-beachvolley/character-preview.html): キャラクタースプライトのアニメーションプレビュー
 - `assets/`: キャラクタースプライト、背景、アート設定ドキュメント

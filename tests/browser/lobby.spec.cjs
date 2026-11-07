@@ -110,7 +110,7 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(row('クイック')).toContainText('横速度上限 1177 → 1350');
   await expect(row('トス')).toContainText('410／高トス 520');
   await expect(row('フェイント')).toContainText('ブロック無効');
-  await expect(row('パワーレシーブ（1sp）')).toContainText('上向き 600');
+  await expect(row('パワーレシーブ（1sp）')).toContainText('上向き 500');
   await expect(row('パワーレシーブ（1sp）')).toContainText('ノックバックを完全無効化');
   await expect(page.locator('#frame-data-landing')).toContainText('ジャンプ中のボタン操作は1ジャンプにつき1回まで');
   await expect(page.locator('#frame-data-landing')).toContainText('着地硬直（12F）');
@@ -962,6 +962,41 @@ test("window blur pauses match when humans are present, but keeps running when a
   // But manual Space still pauses
   await page.keyboard.press("Space");
   expect(await page.evaluate(() => window.rallyGame.snapshot().paused)).toBe(true);
+
+  expect(errors).toEqual([]);
+});
+
+test("ball tracker appears below scoreboard when ball rises into upper screen", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+  await page.locator("#character-check").click();
+
+  // 1. Initially on floor/mid-court, tracker is not active
+  const initial = await page.evaluate(() => window.rallyGame.ballTrackerState());
+  expect(initial).not.toBeNull();
+  expect(initial.active).toBe(false);
+
+  // 2. Place ball high in the air above scoreboard bottom (y = 50)
+  await page.evaluate(() => {
+    window.rallyGame.testSetBall({ y: 50, vy: -180 });
+  });
+
+  const high = await page.evaluate(() => window.rallyGame.ballTrackerState());
+  expect(high.active).toBe(true);
+  expect(high.alpha).toBe(1);
+  expect(high.vy).toBeLessThan(-40);
+
+  // 3. Take a screenshot showing the tracker in action
+  await page.screenshot({ path: "test-results/ball-tracker-active.png" });
+
+  // 4. Place ball lower in normal play area (y = 350)
+  await page.evaluate(() => {
+    window.rallyGame.testSetBall({ y: 350, vy: 200 });
+  });
+
+  const normal = await page.evaluate(() => window.rallyGame.ballTrackerState());
+  expect(normal.active).toBe(false);
 
   expect(errors).toEqual([]);
 });

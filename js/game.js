@@ -74,7 +74,7 @@ const ATTACK_SPEED = 720;
 const QUICK_SPEED = 1177;
 const ATTACK_CHARGE_BONUS = 0.5;
 const KNOCKBACK_RULES = Object.freeze({ weak: 900, double: 1300, powerServe: 1300, decay: 4 });
-const TOSS_SPEEDS = Object.freeze({ normal: 410, high: 520, powerReceive: 600 });
+const TOSS_SPEEDS = Object.freeze({ normal: 410, high: 520, powerReceive: 500 });
 const SPECIAL_RULES = Object.freeze({
   mozuPeakY: 62, mozuDiveSpeed: 1100, empoweredSpeed: 1.5,
   knockback: 1800, knockbackGround: 900, impactRiseSpeed: 650, impactRecovery: 48
@@ -3073,6 +3073,95 @@ function drawHud() {
   ctx.restore();
 }
 
+function drawBallTracker() {
+  if (!ball || !running || winner) return;
+
+  const screenX = (ball.x - camera.x) * camera.zoom;
+  const screenY = (ball.y - camera.y) * camera.zoom;
+  const thresholdY = 114;
+  if (screenY >= thresholdY) return;
+
+  const alpha = Math.min(1, Math.max(0, (thresholdY - screenY) / 20));
+  if (alpha <= 0.02) return;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  const markerW = 42;
+  const markerH = 20;
+  const clampedX = Math.max(markerW / 2 + 12, Math.min(VIEW_W - markerW / 2 - 12, screenX));
+  const markerY = 114;
+
+  const glow = ballGlowColor();
+
+  // Downward pointer notch toward court
+  ctx.fillStyle = glow ? glow : '#102f43';
+  ctx.beginPath();
+  ctx.moveTo(clampedX - 5, markerY + markerH / 2);
+  ctx.lineTo(clampedX + 5, markerY + markerH / 2);
+  ctx.lineTo(clampedX, markerY + markerH / 2 + 5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Capsule container
+  ctx.fillStyle = '#102f43ea';
+  ctx.beginPath();
+  ctx.roundRect(clampedX - markerW / 2, markerY - markerH / 2, markerW, markerH, 10);
+  ctx.fill();
+
+  // Border and optional special glow
+  ctx.strokeStyle = glow || '#eff9e980';
+  ctx.lineWidth = glow ? 1.5 : 1;
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 8;
+  }
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Mini ball icon
+  const iconX = clampedX - 9;
+  const iconY = markerY;
+  const iconR = 5.5;
+
+  ctx.save();
+  ctx.translate(iconX, iconY);
+  ctx.rotate(ball.rotation ?? 0);
+  if (ballArt.complete && ballArt.naturalWidth) {
+    const sz = iconR * 2.16;
+    ctx.drawImage(ballArt, -sz / 2, -sz / 2, sz, sz);
+  } else {
+    ctx.fillStyle = glow || '#fff9dc';
+    ctx.beginPath();
+    ctx.arc(0, 0, iconR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e77a43';
+    ctx.fillRect(-iconR * 0.8, -iconR * 0.25, iconR * 1.6, iconR * 0.5);
+  }
+  ctx.restore();
+
+  // Motion arrow (▲ rising, ● apex, ▼ falling)
+  const statusX = clampedX + 9;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '900 10px "Barlow Condensed", Impact, sans-serif';
+
+  if (ball.vy < -40) {
+    ctx.fillStyle = '#72d9ef';
+    ctx.fillText('▲', statusX, markerY);
+  } else if (ball.vy > 40) {
+    ctx.fillStyle = '#ff956e';
+    ctx.fillText('▼', statusX, markerY);
+  } else {
+    ctx.fillStyle = '#ffe58e';
+    ctx.beginPath();
+    ctx.arc(statusX, markerY, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 function draw() {
   ctx.save();
   ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
@@ -3098,6 +3187,7 @@ function draw() {
 
   drawActionPops();
   drawHud();
+  drawBallTracker();
   ctx.restore();
 }
 
@@ -3152,6 +3242,22 @@ window.rallyGame = {
   stop() { reset(); keys.clear(); },
   pause() { if (running) { paused = !paused; status(); } },
   controller() { return readController(1, navigator.getGamepads?.() || []); },
+  ballTrackerState() {
+    if (!ball) return null;
+    const screenX = (ball.x - camera.x) * camera.zoom;
+    const screenY = (ball.y - camera.y) * camera.zoom;
+    const thresholdY = 114;
+    return {
+      active: screenY < thresholdY,
+      screenX,
+      screenY,
+      alpha: screenY < thresholdY ? Math.min(1, Math.max(0, (thresholdY - screenY) / 20)) : 0,
+      vy: ball.vy
+    };
+  },
+  testSetBall(props) {
+    if (ball && props) Object.assign(ball, props);
+  },
   snapshot() {
     return { players, ball: ball ? { ...ball, lastHitter: players.indexOf(ball.lastHitter), trail: [] } : null,
       score, running, paused, winner, serveTimer, serveState, serveTurns, time, shake, pointEnd, audioEvents,

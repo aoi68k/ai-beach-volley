@@ -56,7 +56,7 @@ const sandbox = {
 
 vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../assets/characters/idle-alignment.js'), 'utf8'), sandbox);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../game.js'), 'utf8'), sandbox);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/game.js'), 'utf8'), sandbox);
 
 const run = code => vm.runInContext(code, sandbox);
 // Snapshot serialization must preserve hitter identity without sharing object references.

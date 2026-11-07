@@ -63,7 +63,7 @@ const context = vm.createContext({
   console
 });
 
-const code = fs.readFileSync(path.join(__dirname, '..', 'gamepad-config.js'), 'utf8');
+const code = fs.readFileSync(path.join(__dirname, '..', 'js', 'gamepad-config.js'), 'utf8');
 vm.runInContext(code, context);
 
 const { gamepadConfig } = windowObj;

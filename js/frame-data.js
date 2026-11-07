@@ -34,7 +34,7 @@
     'フェイント': ['なし', '可変（ネット越え後ドライブ急降下・終端落下 約710〜770）'],
     'モズ落とし（1sp）': ['なし', `上昇は可変／急降下開始 ${speeds.mozuDive}（縦）`],
     'パワーアタック（1sp）': [`地上 弱：初速${knockback.empoweredGround}／理論${Math.round(knockback.empoweredGround / knockback.decay)}px、空中 強：初速${knockback.empowered}／理論${Math.round(knockback.empowered / knockback.decay)}px`, cap(Math.round(speeds.attack * speeds.empoweredMultiplier), speeds.empoweredMax ?? 1350)],
-    'パワーレシーブ（1sp）': ['無効化', `上向き ${speeds.powerReceive ?? 600}（縦）`],
+    'パワーレシーブ（1sp）': ['無効化', `上向き ${speeds.powerReceive ?? 500}（縦）`],
     '地上サーブ（B）': ['なし', '可変（中央へ落ちる軌道）'],
     'ジャンプサーブ（方向なし）': ['なし', cap(speeds.attack)],
     'ジャンプサーブ（前＋A）': ['なし', reference('fast')],
