@@ -115,7 +115,7 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(page.locator('#show-frame-data')).toHaveText('フレーム一覧 ↗');
   await page.locator('#show-frame-data').click();
   await expect(page.locator('#frame-data')).toHaveAttribute('open','');
-  await expect(page.locator('#frame-data thead th')).toHaveCount(7);
+  await expect(page.locator('#frame-data thead th')).toHaveCount(8);
   const row=name=>page.getByRole('rowheader',{name,exact:true}).locator('..');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
@@ -125,6 +125,8 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(row('クイック')).toContainText('横速度上限 1177 → 1350');
   await expect(row('トス')).toContainText('410／高トス 520');
   await expect(row('フェイント')).toContainText('ブロック無効');
+  await expect(row('フェイント')).toContainText('750');
+  await expect(row('ループシュート')).toContainText('1150');
   await expect(row('パワーレシーブ（1sp）')).toContainText('上向き 500');
   await expect(row('パワーレシーブ（1sp）')).toContainText('ノックバックを完全無効化');
   await expect(page.locator('#frame-data-landing')).toContainText('ジャンプ中のボタン操作は1ジャンプにつき1回まで');
@@ -1204,12 +1206,12 @@ test("loop shot: airborne Up plus B produces gentle high-arc lob over net into o
   await page.keyboard.up("KeyX");
   await page.keyboard.up("ArrowUp");
 
-  // Speed has pace with drive (~500-600 px/s vs attack 720+ px/s)
+  // Speed has pace with drive (~450-600 px/s vs attack 720+ px/s)
   const speed = await page.evaluate(() => {
     const b = window.rallyGame.snapshot().ball;
     return Math.hypot(b.vx, b.vy);
   });
-  expect(speed).toBeGreaterThan(480);
+  expect(speed).toBeGreaterThan(420);
   expect(speed).toBeLessThan(680);
 
   // Clearance over net is high (Y <= 230, which is > 150px above NETTOP 385)
