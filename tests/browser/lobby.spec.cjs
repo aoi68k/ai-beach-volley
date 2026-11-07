@@ -1204,16 +1204,19 @@ test("loop shot: airborne Up plus B produces gentle high-arc lob over net into o
   await page.keyboard.up("KeyX");
   await page.keyboard.up("ArrowUp");
 
-  // Speed is gentle (< 480 px/s)
+  // Speed has pace with drive (~500-600 px/s vs attack 720+ px/s)
   const speed = await page.evaluate(() => {
     const b = window.rallyGame.snapshot().ball;
     return Math.hypot(b.vx, b.vy);
   });
-  expect(speed).toBeLessThan(480);
-  expect(speed).toBeGreaterThan(250);
+  expect(speed).toBeGreaterThan(480);
+  expect(speed).toBeLessThan(680);
 
   // Clearance over net is high (Y <= 230, which is > 150px above NETTOP 385)
   await expect.poll(() => page.evaluate(() => window._loopNetY), { timeout: 3000 }).toBeLessThan(235);
+
+  // Drive accelerates downward after crossing net
+  await expect.poll(() => page.evaluate(() => (window.rallyGame.snapshot().ball?.loopDrive ?? 0)), { timeout: 3000 }).toBeGreaterThan(100);
 
   // Lands in opponent mid-court (around 785)
   await expect.poll(() => page.evaluate(() => window._loopMaxX), { timeout: 4000 }).toBeGreaterThan(700);

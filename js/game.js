@@ -1167,7 +1167,7 @@ function hit(p, set, forcedType, forward = false, feint = false, down = false, u
               : NET + 190 + Math.random() * 230;
 
   const air = type === 'attack';
-  let duration = type === 'loop' ? 1.45 : type === 'feint' ? 0.75 : set ? 1.05 : air ? 0.75 : type === 'flying' ? 1.6 : 1.25;
+  let duration = type === 'feint' ? 0.75 : set ? 1.05 : air ? 0.75 : type === 'flying' ? 1.6 : 1.25;
   const endY = FLOOR - 14;
   const tossSpeed = isPowerReceive ? TOSS_SPEEDS.powerReceive : down ? TOSS_SPEEDS.high : TOSS_SPEEDS.normal;
 
@@ -1178,7 +1178,7 @@ function hit(p, set, forcedType, forward = false, feint = false, down = false, u
   // Lengthen a return when needed so gravity carries it over the top of the net.
   const fraction = (NET - ball.x) / (target - ball.x);
   if (!ownTarget && fraction > 0 && fraction < 1) {
-    const clearance = NETTOP - ball.r - (type === 'loop' ? 165 : type === 'feint' ? 20 : 10);
+    const clearance = NETTOP - ball.r - (type === 'feint' ? 20 : 10);
     const needed = (2 * ((1 - fraction) * ball.y + fraction * endY - clearance)) / (GRAVITY * fraction * (1 - fraction));
     duration = Math.max(duration, Math.sqrt(Math.max(0, needed)));
   }
@@ -1187,6 +1187,25 @@ function hit(p, set, forcedType, forward = false, feint = false, down = false, u
   ball.vx = (target - ball.x) / duration;
   ball.vy = (endY - ball.y - 0.5 * GRAVITY * duration * duration) / duration;
   if (set || isPowerReceive) { ball.vy = -tossSpeed; ball.tossId = (ball.tossId || 0) + 1; }
+
+  if (type === 'loop') {
+    const loopDuration = 1.16;
+    const frac = Math.max(0.15, Math.min(0.85, fraction));
+    const t1 = loopDuration * frac;
+    const t2 = loopDuration * (1 - frac);
+    const a0 = 420;
+    const k = 1600;
+    const driveDrop = 0.5 * a0 * t2 * t2 + (1 / 6) * k * t2 * t2 * t2;
+    let vy0 = (endY - ball.y - 0.5 * GRAVITY * loopDuration * loopDuration - driveDrop) / loopDuration;
+    const clearance = NETTOP - ball.r - 160;
+    const netYPred = ball.y + vy0 * t1 + 0.5 * GRAVITY * t1 * t1;
+    if (netYPred > clearance) {
+      vy0 = (clearance - ball.y - 0.5 * GRAVITY * t1 * t1) / t1;
+    }
+    ball.vx = (target - ball.x) / loopDuration;
+    ball.vy = vy0;
+    ball.loopDrive = 0;
+  }
 
   if (air) {
     const charge = p.y < FLOOR ? Math.max(0, Math.min(1, (p.attackChargeFrames ?? 0) / FRAME_RULES.attackCharge)) : 0;
@@ -1869,7 +1888,11 @@ function updateBallSpin(dt) {
   if (!ball) return;
   const speed = Math.hypot(ball.vx, ball.vy);
   if (Math.abs(ball.vx) > 10) ball.spinDirection = Math.sign(ball.vx);
-  const spinBoost = (ball.lastShot === 'feint' && (ball.feintDrive ?? 0) > 0) ? 2.4 : 1;
+  const spinBoost = (ball.lastShot === 'feint' && (ball.feintDrive ?? 0) > 0)
+    ? 2.4
+    : (ball.lastShot === 'loop' && (ball.loopDrive ?? 0) > 0)
+      ? 2.6
+      : 1;
   const angularSpeed = (speed / ball.r * 0.18) * spinBoost;
   const turn = Math.PI * 2;
   ball.rotation = ((ball.rotation ?? 0) + angularSpeed * (ball.spinDirection || 1) * dt) % turn;
@@ -1901,6 +1924,10 @@ function updateBall(dt) {
     if (ball.lastShot === 'feint' && (ball.x - (NET + Math.sign(ball.vx) * NET_CLEAR_OFFSET)) * ball.vx > 0) {
       ball.feintDrive = (ball.feintDrive || 0) + 3600 * dt;
       ball.vy += (650 + ball.feintDrive) * dt;
+    }
+    if (ball.lastShot === 'loop' && (ball.x - NET) * ball.vx > 0) {
+      ball.loopDrive = (ball.loopDrive || 0) + 1600 * dt;
+      ball.vy += (420 + ball.loopDrive) * dt;
     }
     ball.x += ball.vx * dt;
     ball.y += ball.vy * dt;

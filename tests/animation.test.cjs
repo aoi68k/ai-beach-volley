@@ -1176,9 +1176,9 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   assert.equal(run("players[0].actionPop.action"), "loop");
   assert.equal(run("audioEvents.some(e => e.name === 'loop')"), true);
 
-  // 2. Initial speed is gentle (slower pace, ~280-420 px/s vs attack 720+ px/s)
+  // 2. Initial speed has more pace with topspin drive (~500-600 px/s vs attack 720+ px/s)
   const loopSpeed = run("Math.hypot(ball.vx, ball.vy)");
-  assert(loopSpeed >= 250 && loopSpeed <= 480, `loop speed ${loopSpeed} should be gentle`);
+  assert(loopSpeed >= 480 && loopSpeed <= 680, `loop speed ${loopSpeed} should have speed with drive`);
 
   // 3. Block cannot intercept loop shots
   run("players[2].x=NET+25;players[2].y=350;players[2].blockFrames=30;");
