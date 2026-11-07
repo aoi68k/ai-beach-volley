@@ -1,7 +1,9 @@
 # SUNSET RALLY (サンセット・ラリー)
 
+🎮 **[今すぐブラウザでプレイする (無料・インストール不要)](https://aoi68k.github.io/ai-beach-volley/)**
+
 真横から見る 2対2 ビーチバレーのブラウザ対戦ゲーム。  
-ビルドや外部ライブラリのインストールは不要で、`index.html` をブラウザで開くだけですぐにプレイできます。
+PC・スマホのブラウザでアクセスするだけですぐにプレイ＆オンライン対戦できます。
 
 ![SUNSET RALLY ゲーム画面](./assets/gameplay-preview.png)
 
