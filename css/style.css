@@ -40,6 +40,20 @@ header {
   padding-bottom: 20px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.last-update {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #5d7882;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .brand {
   font: 900 38px 'Barlow Condensed', sans-serif;
   color: var(--ink);
@@ -597,7 +611,17 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
 button:disabled, button:disabled:hover, button.active:disabled { cursor: not-allowed; opacity: 1; color: #87979e; background: #e5ebed; border-color: #c6d1d6; box-shadow: none; transform: none; transition: none; }
 button.active:disabled::before, button[aria-pressed="true"]:disabled::before { color: #87979e; }
 dialog small { display: block; font-size: 11px; line-height: 1.9; }
-@media (max-width: 650px) { dialog { padding: 18px; } .lobby-heading { margin: -18px -18px 16px; padding: 18px; } .player-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); } .player-card { padding: 8px; } .player-card strong { font-size: 11px; } .player-card select { padding: 8px 4px; font-size: 12px; } input { width: 100% !important; } }
+@media (max-width: 650px) {
+  dialog { padding: 18px; }
+  .lobby-heading { margin: -18px -18px 16px; padding: 18px; }
+  .player-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .player-card { padding: 8px; }
+  .player-card strong { font-size: 11px; }
+  .player-card select { padding: 8px 4px; font-size: 12px; }
+  input { width: 100% !important; }
+  .header-right { flex-direction: column; align-items: flex-end; gap: 4px; }
+  .last-update { font-size: 9.5px; letter-spacing: 1px; }
+}
 @media (max-width: 480px) {
   .overlay.is-victory p, .overlay.is-victory .overlay-card::after { display: none; }
   .overlay.is-victory .overlay-result { margin-top: 6px; }

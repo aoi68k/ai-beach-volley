@@ -94,6 +94,19 @@ test('invitation view only permits joining and keeps setup under host control', 
   expect(errors).toEqual([]);
 });
 
+test('header displays brand, sound button, and last update date at desktop and mobile sizes', async ({ page }) => {
+  await page.goto('/');
+  const updateEl = page.locator('.last-update');
+  await expect(updateEl).toBeVisible();
+  await expect(updateEl).toHaveText(/LAST UPDATE:\s*2026\/11\/07/);
+  await page.screenshot({ path: 'test-results/header-desktop.png' });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(updateEl).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/header-mobile.png' });
+});
+
 test('player setup highlights local 1P and blue portraits face left', async ({page})=>{
   await page.goto('/');await page.locator('#start').click();
   await expect(page.locator('#player-slots .is-you strong')).toHaveText('コーラル / 男性');
@@ -808,9 +821,13 @@ test('local setup is required, unique assignments, movement and restart', async 
   await slots.nth(2).selectOption('1');
   await expect(slots.nth(0)).toHaveValue('0');
   await page.locator('#launch-match').click();
+  await expect(page.locator('#lobby')).toBeHidden();
+  await page.waitForFunction(() => window.rallyGame.snapshot().running);
   const before = await page.evaluate(() => window.rallyGame.snapshot().players[2].x);
-  await page.locator('#game').click(); await page.keyboard.down('ArrowRight'); await page.waitForTimeout(300); await page.keyboard.up('ArrowRight');
-  expect(await page.evaluate(() => window.rallyGame.snapshot().players[2].x)).toBeGreaterThan(before);
+  await page.locator('#game').click();
+  await page.keyboard.down('ArrowRight');
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.snapshot().players[2].x)).toBeGreaterThan(before);
+  await page.keyboard.up('ArrowRight');
   await page.keyboard.press('KeyR'); await expect(page.locator('#lobby')).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: 'test-results/lobby-mobile.png' });
