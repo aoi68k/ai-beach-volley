@@ -28,7 +28,7 @@ const selectedRunArt = CHARACTER_NAMES.map(name => loadImage(`assets/characters/
 
 // --- Constants ---
 const VIEW_W = 1200;
-const W = 1200;
+const W = 1080;
 const H = 620;
 const FLOOR = 530;
 const COURT_REAR_LINE_Y = 509;
@@ -152,7 +152,7 @@ const ACTION_POP_STYLES = {
   powerServe: { text: 'POWER SERVE!', color: '#80dfff', dark: '#2876df' }
 };
 
-const INITIAL_PLAYER_X = [220, 410, 790, 980];
+const INITIAL_PLAYER_X = [200, 370, 710, 880];
 const PLAYER_COLORS = ['#e96a42', '#e7ad43', '#407f99', '#646fb0'];
 const PLAYER_GAUGE_COLORS = ['#ff6559', '#ffc83d', '#32d5ff', '#bd91ff'];
 
@@ -215,7 +215,7 @@ let audioEvents = [];
 let particles = [];
 let specialActivation = null;
 
-const camera = { x: 0, y: 0, zoom: 1.35 };
+const camera = { x: 0, y: 0, zoom: 1.48 };
 const keys = new Set();
 
 // --- UI & Audio ---
@@ -322,6 +322,117 @@ function status() {
     : window.matchLobby?.online ? 'ONLINE / ホスト: SPACEで一時停止・Rでロビー / 先に11点で勝利' : '先に11点で勝利';
 }
 
+function isFullscreenArena() {
+  const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  const doc = typeof document !== 'undefined' ? document : null;
+  if (!doc) return false;
+  return Boolean(
+    doc.fullscreenElement ||
+    doc.webkitFullscreenElement ||
+    doc.mozFullScreenElement ||
+    doc.msFullscreenElement ||
+    (arena && arena.classList?.contains?.('is-fullscreen'))
+  );
+}
+
+function updateFullscreenUI() {
+  const active = isFullscreenArena();
+  const btn = document.querySelector?.('#toggle-fullscreen');
+  const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  if (arena && arena.classList?.toggle) {
+    const doc = typeof document !== 'undefined' ? document : null;
+    const nativeActive = Boolean(
+      doc?.fullscreenElement ||
+      doc?.webkitFullscreenElement ||
+      doc?.mozFullScreenElement ||
+      doc?.msFullscreenElement
+    );
+    arena.classList.toggle('is-fullscreen', active && !nativeActive);
+  }
+  if (!btn) return;
+  const iconExpand = btn.querySelector?.('.icon-expand');
+  const iconCompress = btn.querySelector?.('.icon-compress');
+  const fsText = btn.querySelector?.('.fs-text');
+  if (iconExpand) {
+    if (active) iconExpand.setAttribute('hidden', '');
+    else iconExpand.removeAttribute('hidden');
+  }
+  if (iconCompress) {
+    if (active) iconCompress.removeAttribute('hidden');
+    else iconCompress.setAttribute('hidden', '');
+  }
+  if (fsText) fsText.textContent = active ? 'WINDOW' : 'FULLSCREEN';
+  btn.setAttribute?.('aria-label', active ? '通常表示に戻す' : 'フルスクリーンの切り替え');
+  btn.title = active ? '通常表示に戻す (F)' : 'フルスクリーンの切り替え (F)';
+}
+
+async function requestFullscreenArena() {
+  const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  if (!arena) return;
+  try {
+    if (arena.requestFullscreen) {
+      await arena.requestFullscreen();
+    } else if (arena.webkitRequestFullscreen) {
+      await arena.webkitRequestFullscreen();
+    } else if (arena.mozRequestFullScreen) {
+      await arena.mozRequestFullScreen();
+    } else if (arena.msRequestFullscreen) {
+      await arena.msRequestFullscreen();
+    } else {
+      arena.classList?.add?.('is-fullscreen');
+    }
+  } catch (err) {
+    arena.classList?.add?.('is-fullscreen');
+  }
+  updateFullscreenUI();
+}
+
+async function exitFullscreenArena() {
+  const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  try {
+    const doc = typeof document !== 'undefined' ? document : null;
+    if (doc?.fullscreenElement || doc?.webkitFullscreenElement || doc?.mozFullScreenElement || doc?.msFullscreenElement) {
+      if (doc.exitFullscreen) await doc.exitFullscreen();
+      else if (doc.webkitExitFullscreen) await doc.webkitExitFullscreen();
+      else if (doc.mozCancelFullScreen) await doc.mozCancelFullScreen();
+      else if (doc.msExitFullscreen) await doc.msExitFullscreen();
+    }
+  } catch (err) {
+    // Ignore rejection
+  }
+  if (arena) arena.classList?.remove?.('is-fullscreen');
+  updateFullscreenUI();
+}
+
+async function toggleFullscreen() {
+  if (isFullscreenArena()) {
+    await exitFullscreenArena();
+  } else {
+    await requestFullscreenArena();
+  }
+}
+
+function initFullscreenControl() {
+  const btn = document.querySelector?.('#toggle-fullscreen');
+  if (btn?.addEventListener) {
+    btn.addEventListener('click', e => {
+      e?.preventDefault?.();
+      toggleFullscreen();
+    });
+  }
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(ev => {
+      document.addEventListener(ev, updateFullscreenUI);
+    });
+  }
+  updateFullscreenUI();
+}
+if (typeof document !== 'undefined' && document.readyState === 'loading') {
+  document.addEventListener?.('DOMContentLoaded', initFullscreenControl);
+} else {
+  initFullscreenControl();
+}
+
 function startCharacterCheck() {
   if (window.matchLobby?.online) return;
   reset();
@@ -411,7 +522,7 @@ function holdServeBall(p) {
 
 function serveVelocity(b, side, variant) {
   const direction = side ? -1 : 1;
-  const target = NET + direction * (variant === 'power' ? 525 : variant === 'fast' ? 440 : variant === 'high' ? 490 : 300);
+  const target = NET + direction * (variant === 'power' ? 470 : variant === 'fast' ? 395 : variant === 'high' ? 440 : 270);
   const crossY = variant === 'high' ? 145 : variant === 'slow' ? 245
     : variant === 'power' ? NETTOP - b.r - 12 : NETTOP - b.r - 26;
   const fraction = (NET - b.x) / (target - b.x);
@@ -443,7 +554,7 @@ function strikeServe(p, airborne, input = {}) {
     status();
     return;
   }
-  const target = p.side ? NET - 300 : NET + 300;
+  const target = p.side ? NET - 270 : NET + 270;
   const endY = FLOOR - ball.r;
   let duration = 1.7;
   const fraction = (NET - ball.x) / (target - ball.x);
@@ -530,7 +641,17 @@ document.querySelector('#sound').onclick = e => {
 };
 
 window.addEventListener('keydown', e => {
-  if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'SUMMARY'].includes(e.target?.tagName)) return;
+  if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target?.tagName)) return;
+  if (['BUTTON', 'SUMMARY'].includes(e.target?.tagName) && e.code === 'Space') return;
+  const is2PKeyboardActive = !window.matchLobby?.online && players[1]?.human;
+  if (e.code === 'KeyF' && (!is2PKeyboardActive || e.shiftKey) && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault();
+    toggleFullscreen();
+    return;
+  }
+  if (e.code === 'Escape' && isFullscreenArena()) {
+    exitFullscreenArena();
+  }
   if (Object.values(bindings).flat(2).includes(e.code) || e.code === 'Space') {
     e.preventDefault();
   }
@@ -954,7 +1075,7 @@ function tryBlock(p) {
 function supportPosition(p, mate) {
   const forward = p.side ? -1 : 1;
   const mateDistance = (NET - mate.x) * forward;
-  const nominal = NET - forward * (mateDistance < 200 ? 300 : 110);
+  const nominal = NET - forward * (mateDistance < 180 ? 270 : 100);
   // Stay within a short run of the teammate's next contact.
   const covered = Math.max(mate.x - 220, Math.min(mate.x + 220, nominal));
   return clampCourtX(covered, p.side, 35, 35);
@@ -3383,5 +3504,9 @@ window.rallyGame = {
     if (winner) setOverlay(score[0] >= WINNING_SCORE ? 'CORAL WINS!' : 'BLUE WINS!', 'ロビーで次の試合の担当を決めましょう。', 'LOBBY ');
     else document.querySelector('#overlay').classList.toggle('hidden', running);
     status();
-  }
+  },
+  toggleFullscreen,
+  isFullscreen: isFullscreenArena,
+  requestFullscreen: requestFullscreenArena,
+  exitFullscreen: exitFullscreenArena
 };

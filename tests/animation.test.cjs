@@ -337,15 +337,17 @@ assert.equal(draws.at(-1)[0], run('animatedPlayerArt[3]'));
 run('tossHitArt.complete=true;playerArt.complete=true;');
 
 // Ground receive preparation holds while A is pressed, and releases without a cooldown.
+const courtW = run('W'), courtNet = run('NET');
+const p0InitX = run('INITIAL_PLAYER_X[0]');
 run('mode=5;reset();ball.x=1000;keys.add("KeyZ");updateActivePlayer(players[0],1/60,[]);');
 assert.equal(run('players[0].receiveReady'), true);
 assert.deepEqual(pose(), { legacy: true, frame: 3 });
 run('keys.add("ArrowLeft");updateActivePlayer(players[0],1/60,[]);');
-assert.equal(run('players[0].x'), 220);
+assert.equal(run('players[0].x'), p0InitX);
 assert.equal(run('players[0].vx'), 0);
 run('keys.delete("KeyZ");updateActivePlayer(players[0],1/60,[]);keys.clear();');
 assert.equal(run('players[0].receiveReady'), false);
-assert(run('players[0].x < 220'));
+assert(run('players[0].x') < p0InitX);
 assert.equal(run('players[0].recoveryFrames'), 0);
 // Jump+A and B take priority; holding A still hits as soon as the ball arrives.
 run('reset();ball.x=1000;keys.add("KeyZ");updateActivePlayer(players[0],1/60,[]);keys.add("ArrowUp");updateActivePlayer(players[0],1/60,[]);keys.clear();');
@@ -364,21 +366,21 @@ run('reset();ball.x=1000;updateActivePlayer(players[0],1/60,[{axes:[0,0],buttons
 assert.equal(run('players[0].receiveReady'), true);
 run('mode=0;reset();ball.x=400;ball.y=450;ball.vx=0;ball.vy=0;updateActivePlayer(players[0],1/60,[]);');
 assert.equal(run('players[0].receiveReady'), false);
-assert(run('players[0].x > 220'));
+assert(run('players[0].x') > p0InitX);
 
 // Ground toss preparation and lingering toss/receive poses cannot slide.
 run('mode=5;reset();ball.x=1000;keys.add("ArrowRight");keys.add("KeyX");updateActivePlayer(players[0],.016,[]);');
-assert.equal(run('players[0].x'), 220);
+assert.equal(run('players[0].x'), p0InitX);
 assert.equal(run('players[0].vx'), 0);
 assert.deepEqual(pose(), { legacy: true, frame: 4 });
 run('keys.delete("KeyX");updateActivePlayer(players[0],.016,[]);keys.clear();');
-assert(run('players[0].x') > 220);
+assert(run('players[0].x') > p0InitX);
 for (const action of ['set','receive']) {
   run(`reset();ball.x=1000;showAction(players[0],'${action}');players[0].recoveryFrames=0;keys.add("ArrowRight");updateActivePlayer(players[0],.016,[]);`);
-  assert.equal(run('players[0].x'), 220);
+  assert.equal(run('players[0].x'), p0InitX);
   assert.equal(run('players[0].vx'), 0);
   run('players[0].actionFrames=.001;updateActivePlayer(players[0],.016,[]);keys.clear();');
-  assert(run('players[0].x') > 220);
+  assert(run('players[0].x') > p0InitX);
 }
 // Jump remains locked after input recovery ends, until the ground pose expires.
 for (const action of ['set', 'receive']) {
@@ -402,11 +404,11 @@ assert(run('players[0].y < FLOOR'));
 
 // Airborne momentum remains available; a ground movement lock does not affect it.
 run("reset();ball.x=1000;players[0].y=FLOOR-100;players[0].vx=100;showAction(players[0],'set');updateActivePlayer(players[0],.016,[]);");
-assert(run('players[0].x') > 220);
+assert(run('players[0].x') > p0InitX);
 // A COM teammate still approaches a distant second touch before taking its stance.
 run('mode=0;reset();ball.x=400;ball.y=450;ball.vx=0;ball.vy=0;ball.touchSide=0;ball.teamTouches=1;players[1].cooldownFrames=2;updateActivePlayer(players[0],.016,[]);');
 assert.equal(run('players[0].setReady'), false);
-assert(run('players[0].x') > 220);
+assert(run('players[0].x') > p0InitX);
 
 // Flying receive: ground A when ball is horizontally distant dives faster/further, pops ball higher, and has longer 3-stage recoveryFrames.
 run('mode=5;reset();serveTimer=0;ball.x=players[0].x;ball.y=FLOOR-39;keys.add("KeyZ");updateActivePlayer(players[0],0,[]);keys.clear();');
@@ -570,19 +572,20 @@ assert.equal(run('ball.trail.length'), 0);
 
 // Solo checks share match controls and physics, with a repeating, score-free ball.
 run('startCharacterCheck();');
+const checkStartX = run('NET - 100');
 assert.equal(run('players.length'), 1);
 assert.equal(run('players[0].human'), 1);
 assert(run('window.rallyGame.snapshot().ball !== null'));
 assert.equal(run('serveTimer'), 0);
 run("keys.add('ArrowRight');update(.1);");
-assert(run('players[0].x') > 500);
+assert(run('players[0].x') > checkStartX);
 run("keys.delete('ArrowRight');keys.add('ArrowLeft');update(.2);");
-assert(run('players[0].x') < 500);
+assert(run('players[0].x') < checkStartX);
 assert.equal(run('playerSpritePose(players[0]).selectedRun'), true);
 // Neutral jumps cannot steer in midair; running jumps retain takeoff velocity.
 run('startCharacterCheck();keys.add("ArrowUp");update(1/60);keys.clear();keys.add("ArrowRight");update(1/60);keys.clear();');
 assert.equal(run('players[0].vx'), 0);
-assert.equal(run('players[0].x'), 500);
+assert.equal(run('players[0].x'), checkStartX);
 run('startCharacterCheck();keys.add("ArrowRight");keys.add("ArrowUp");update(1/60);keys.clear();keys.add("ArrowLeft");update(1/60);keys.clear();');
 assert.equal(run('players[0].vx'), run('HUMAN_SPEED'));
 run('for(let i=0;i<90;i++)update(1/60);');
@@ -611,12 +614,12 @@ run('update(.1);');
 assert.equal(run('players[0].x'), soloX);
 assert.equal(run('ball.y'), soloBallY);
 run('startCharacterCheck();');
-assert.equal(run('players[0].x'), 500);
+assert.equal(run('players[0].x'), checkStartX);
 assert.equal(run('paused'), false);
 // Repeated landings relaunch on alternating sides without score, point events or pauses.
 for (let i=0;i<4;i++) {
   run('ball.y=FLOOR-ball.r-1;ball.vy=200;updateBall(1/60);');
-  assert.equal(run('ball.x'), i%2===0 ? 642 : 558);
+  assert.equal(run('ball.x'), courtNet + (i%2===0 ? 42 : -42));
   assert.equal(run('ball.vx'), 0);
   assert.equal(run('ball.vy'), -620);
   assert.equal(run('pointEnd'), null);
@@ -700,7 +703,7 @@ for (const side of [0, 1]) {
     run(`reset();ball.x=${side ? 900 : 300};ball.y=FLOOR-39;hit(players[${side * 2}],true,undefined,false,false,${high});`);
     assert.equal(run('ball.vy'), high ? -520 : -410);
     const landingX = run('ball.x+ball.vx*((-ball.vy+Math.sqrt(ball.vy*ball.vy+2*GRAVITY*(FLOOR-14-ball.y)))/GRAVITY)');
-    assert(Math.abs(landingX - (side ? 695 : 505)) < 1e-8);
+    assert(Math.abs(landingX - (side ? courtNet + 95 : courtNet - 95)) < 1e-8);
   }
 }
 // Each keyboard and the gamepad can request high toss through the shared input path.
@@ -805,7 +808,7 @@ for(const side of [0,1]) for(const hz of [30,60,120]) {
   assert(run('ball.vy<0'));
   for(let n=0;n<hz*2&&run('ball.mozuPhase')==='rise';n++)run(`updateBall(${1/hz});`);
   assert.equal(run('ball.mozuPhase'),'dive');
-  assert.equal(run('ball.x'),side?450:750);
+  assert.equal(run('ball.x'), side ? courtNet - 150 : courtNet + 150);
   assert(run('ball.vy>=1100'));
   assert(run('ball.y<100'));
   assert.equal(run('players[0].specials+players[2].specials'),0);
@@ -861,7 +864,7 @@ assert.equal(run('audioEvents.filter(e=>e.name==="mozuDive").length'),1);
 // COMs predict an incoming spike, approach/jump, and actually block on both sides.
 for (const side of [0, 1]) {
   const i = side * 2;
-  run(`mode=0;reset();running=true;serveTimer=0;players[0].x=100;players[1].x=220;players[2].x=950;players[3].x=1100;players[${i}].x=${side?635:565};ball.x=${side?440:760};ball.y=260;ball.vx=${side?500:-500};ball.vy=80;ball.lastSide=${1-side};ball.lastShot='attack';`);
+  run(`mode=0;reset();running=true;serveTimer=0;players[0].x=100;players[1].x=220;players[2].x=${courtW-250};players[3].x=${courtW-100};players[${i}].x=${side?courtNet+35:courtNet-35};ball.x=${side?courtNet-160:courtNet+160};ball.y=260;ball.vx=${side?500:-500};ball.vy=80;ball.lastSide=${1-side};ball.lastShot='attack';`);
   assert.equal(run(`decideComInput(players[${i}]).jump`), true);
   assert.equal(run(`decideComInput(players[${i + 1}]).set`), false);
   let airborneBlock = false;
@@ -946,15 +949,15 @@ run('reset();players[0].airborneTouch=true;players[0].recoveryFrames=40;players[
 assert.equal(run('players[0].recoveryFrames'),40);
 
 // Forward+A aims above the net-top vector and lands deeper, with mirrored trajectories.
-for(const side of [0,1]) for(const [leftX,y] of [[300,350],[420,250],[500,280],[550,300]]) {
-  const x=side?1200-leftX:leftX;
+for(const side of [0,1]) for(const [leftX,y] of [[courtNet - 270, 350],[courtNet - 160, 250],[courtNet - 90, 280],[courtNet - 45, 300]]) {
+  const x=side?courtW-leftX:leftX;
   run(`var testBall={x:${x},y:${y},r:12};var normalShot=attackVelocity(testBall,${side});var deepShot=attackVelocity(testBall,${side},ATTACK_SPEED,true);`);
   const normal=JSON.parse(run('JSON.stringify(normalShot)'));
   const deep=JSON.parse(run('JSON.stringify(deepShot)'));
   assert((deep.landingX-normal.landingX)*(side?-1:1)>1);
-  assert(deep.landingX>=45-1e-6&&deep.landingX<=1155+1e-6);
-  assert(Math.atan2(deep.vy,Math.abs(deep.vx))<=Math.atan2(385-y,Math.abs(600-x))-8*Math.PI/180+1e-8);
-  for(const edge of [579,621]) {
+  assert(deep.landingX>=45-1e-6&&deep.landingX<=courtW-45+1e-6);
+  assert(Math.atan2(deep.vy,Math.abs(deep.vx))<=Math.atan2(385-y,Math.abs(courtNet-x))-8*Math.PI/180+1e-8);
+  for(const edge of [courtNet - 21, courtNet + 21]) {
     const t=(edge-x)/deep.vx;
     assert(y+deep.vy*t+.5*650*t*t+12<=385-5+1e-7);
   }
@@ -964,9 +967,9 @@ for(const side of [0,1]) for(const [leftX,y] of [[300,350],[420,250],[500,280],[
   assert(Math.abs(run('ball.vy')-deep.vy)<1e-8);
 }
 // Directional aiming does not replace down+A's special attack trajectory.
-for(const side of [0,1]) for(const leftX of [580,600,620]) {
-  run(`var nearNetShot=attackVelocity({x:${side?1200-leftX:leftX},y:300,r:12},${side},ATTACK_SPEED,true);`);
-  assert.equal(run('nearNetShot.landingX'),side?90:1110);
+for(const side of [0,1]) for(const leftX of [courtNet - 20, courtNet, courtNet + 20]) {
+  run(`var nearNetShot=attackVelocity({x:${side?courtW-leftX:leftX},y:300,r:12},${side},ATTACK_SPEED,true);`);
+  assert.equal(run('nearNetShot.landingX'),side?90:courtW-90);
   assert.equal(Math.sign(run('nearNetShot.vx')),side?-1:1);
 }
 run('reset();players[0].y=350;players[0].specials=1;ball.x=500;ball.y=280;var specialExpected=attackVelocity(ball,0,ATTACK_SPEED*SPECIAL_RULES.empoweredSpeed);hit(players[0],false,undefined,true,false,true);');
@@ -979,7 +982,7 @@ for(const side of [0,1]) {
   const i=side*2, key=side?'KeyM':'KeyX';
   run(`mode=5;reset();running=true;beginServe(${side});`);
   assert.equal(run('serveState.serverIndex'),i);
-  assert.equal(run(`players[${i}].x`),side?1172:28);
+  assert.equal(run(`players[${i}].x`), side ? courtW - 28 : 28);
   const held=run('JSON.stringify([ball.x,ball.y])');
   run('update(.5);');
   assert.equal(run('JSON.stringify([ball.x,ball.y])'),held);
@@ -988,7 +991,7 @@ for(const side of [0,1]) {
   assert.equal(run(`players[${i}].y`),run('FLOOR'));
   assert.equal(run(`players[${i}].action`),'attack');
   const landing=run('ball.x+ball.vx*((-ball.vy+Math.sqrt(ball.vy**2+2*GRAVITY*(FLOOR-ball.r-ball.y)))/GRAVITY)');
-  assert(Math.abs(landing-(side?300:900))<1e-7);
+  assert(Math.abs(landing - (side ? courtNet - 270 : courtNet + 270)) < 1e-7);
   run('var netTime=(NET-ball.x)/ball.vx;');
   assert(run('ball.y+ball.vy*netTime+.5*GRAVITY*netTime*netTime+ball.r<NETTOP'));
   run(`beginServe(${side});`);
@@ -1031,17 +1034,17 @@ for(const side of [0,1]) {
   const i=side*2,dir=side?-1:1, results={};
   for(const variant of ['fast','high','slow','power']) {
     const input=variant==='power'?'{down:true}':variant==='high'?'{jump:true}':`{move:${variant==='fast'?dir:-dir}}`;
-    run(`mode=5;reset();running=true;beginServe(${side});players[${i}].y=350;players[${i}].specials=2;ball.x=${side?1139:61};ball.y=320;strikeServe(players[${i}],true,${input});`);
+    run(`mode=5;reset();running=true;beginServe(${side});players[${i}].y=350;players[${i}].specials=2;ball.x=${side?courtW-61:61};ball.y=320;strikeServe(players[${i}],true,${input});`);
     assert.equal(run('ball.serveVariant'),variant);
     assert.equal(run(`players[${i}].specials`),variant==='power'?1:2);
     assert.equal(run('ballGlowColor()'),variant==='power'?'#399dff':null);
     const x=run('ball.x'),y=run('ball.y'),vx=run('ball.vx'),vy=run('ball.vy');
-    const t=(600-x)/vx;
+    const t=(courtNet-x)/vx;
     const netY=y+vy*t+.5*650*t*t;
     assert(netY+12<385);
     const flight=(-vy+Math.sqrt(vy*vy+2*650*(518-y)))/650;
     const landing=x+vx*flight;
-    assert(landing>=45&&landing<=1155);
+    assert(landing>=45&&landing<=courtW-45);
     if(variant==='high') assert(netY<180);
     results[variant]={speed:Math.hypot(vx,vy),netY};
   }
@@ -1049,7 +1052,7 @@ for(const side of [0,1]) {
   assert(results.fast.speed>results.slow.speed);
   assert(results.slow.netY<results.fast.netY);
   assert(results.high.netY<results.slow.netY);
-  run(`mode=5;reset();beginServe(${side});players[${i}].y=350;players[${i}].specials=0;ball.x=${side?1139:61};ball.y=320;strikeServe(players[${i}],true,{down:true});`);
+  run(`mode=5;reset();beginServe(${side});players[${i}].y=350;players[${i}].specials=0;ball.x=${side?courtW-61:61};ball.y=320;strikeServe(players[${i}],true,{down:true});`);
   assert.equal(run('ball.serveVariant'),'normal');
   assert.equal(run('ball.specialShot'),null);
   assert.equal(run(`players[${i}].specials`),0);
@@ -1131,11 +1134,11 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
     const newX = run("ball.x");
     const newY = run("ball.y");
     if (newY + 12 >= 530) break;
-    if (x <= 600 && newX > 600) {
+    if (x <= courtNet && newX > courtNet) {
       netCleared = true;
       assert(run("ball.y") + 12 < 385, "feint must clear above the net tape");
     }
-    if (x > 620) {
+    if (x > courtNet + 20) {
       assert(newDrive > prevDrive, "feintDrive should accumulate over frames after net");
       const deltaVy = newVy - prevVy;
       assert(deltaVy > (650 / 60) + 1, "downward speed increment must exceed normal gravity");
@@ -1150,7 +1153,7 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   // Verify across multiple starting distances and both sides that feint never clips the net tape
   for (const side of [0, 1]) {
     for (const distFromNet of [40, 60, 80, 100]) {
-      const px = side === 0 ? 600 - distFromNet : 600 + distFromNet;
+      const px = side === 0 ? courtNet - distFromNet : courtNet + distFromNet;
       run(`mode=5;reset();running=true;audioEvents=[];players[${side*2}].x=${px};players[${side*2}].y=350;ball.x=${px};ball.y=311;hit(players[${side*2}],false,undefined,false,true,false);`);
       let landed = false;
       for (let step = 0; step < 90; step++) {
@@ -1161,7 +1164,7 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
       const netSfx = run("audioEvents.some(e => e.name === 'net')");
       assert.equal(netSfx, false, `feint from dist ${distFromNet} (side ${side}) must never touch the net tape`);
       const landX = run("ball.x");
-      assert(side === 0 ? landX > 600 : landX < 600, `feint must land on opponent side (side ${side}, landX=${landX})`);
+      assert(side === 0 ? landX > courtNet : landX < courtNet, `feint must land on opponent side (side ${side}, landX=${landX})`);
     }
   }
 }

@@ -371,8 +371,8 @@ test('airborne down inputs spend SP and launch blue special shots', async ({ pag
     await page.locator('#character-check').click();
     await page.evaluate(() => {
       const s = window.rallyGame.snapshot();
-      Object.assign(s.players[0], { x: 550, y: 350, vx: 0, vy: 0, specials: 1 });
-      Object.assign(s.ball, { x: 610, y: 311, vx: 0, vy: 0 });
+      Object.assign(s.players[0], { x: NET - 50, y: 350, vx: 0, vy: 0, specials: 1 });
+      Object.assign(s.ball, { x: NET + 10, y: 311, vx: 0, vy: 0 });
       window.rallyGame.apply(s);
     });
     await page.keyboard.down('ArrowDown');
@@ -383,9 +383,10 @@ test('airborne down inputs spend SP and launch blue special shots', async ({ pag
     await page.keyboard.up(key);
     await page.keyboard.up('ArrowDown');
     if (special === 'mozu') {
-      await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.mozuPhase)).toBe('dive');
+      await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().ball.mozuPhase), { intervals: [16, 32, 50], timeout: 5000 }).toBe('dive');
       const ball = await page.evaluate(() => window.rallyGame.snapshot().ball);
-      expect(ball.x).toBe(750);
+      const expectedLobX = await page.evaluate(() => NET + 150);
+      expect(ball.x).toBe(expectedLobX);
       expect(ball.vy).toBeGreaterThanOrEqual(1100);
     }
     await page.screenshot({ path: `test-results/${special}-shot.png` });
@@ -761,11 +762,12 @@ test('solo character check: movement, jumping, pause, reset and exit', async ({ 
   const state = () => page.evaluate(() => window.rallyGame.snapshot());
   expect((await state()).players).toHaveLength(1);
   expect((await state()).ball).not.toBeNull();
+  const initCheckX = await page.evaluate(() => NET - 100);
   await page.keyboard.down('KeyX');
   await expect.poll(async () => (await state()).players[0].setReady).toBe(true);
   await page.keyboard.up('KeyX');
   await page.keyboard.down('ArrowRight');
-  await expect.poll(async () => (await state()).players[0].x).toBeGreaterThan(520);
+  await expect.poll(async () => (await state()).players[0].x).toBeGreaterThan(initCheckX + 20);
   await page.keyboard.up('ArrowRight');
   await page.keyboard.down('ArrowUp');
   await expect.poll(async () => (await state()).players[0].y).toBeLessThan(500);
@@ -774,9 +776,11 @@ test('solo character check: movement, jumping, pause, reset and exit', async ({ 
   expect((await state()).paused).toBe(true);
   await page.keyboard.press('KeyR');
   expect((await state()).paused).toBe(false);
-  expect((await state()).players[0].x).toBe(500);
-  await expect.poll(async () => (await state()).ball.x, { timeout: 5000 }).toBe(642);
-  await expect.poll(async () => (await state()).ball.x, { timeout: 5000 }).toBe(558);
+  expect((await state()).players[0].x).toBe(initCheckX);
+  const checkBall1 = await page.evaluate(() => NET + 42);
+  const checkBall2 = await page.evaluate(() => NET - 42);
+  await expect.poll(async () => (await state()).ball.x, { timeout: 5000 }).toBe(checkBall1);
+  await expect.poll(async () => (await state()).ball.x, { timeout: 5000 }).toBe(checkBall2);
   expect((await state()).score).toEqual([0, 0]);
   expect((await state()).pointEnd).toBeNull();
   await page.screenshot({ path: 'test-results/character-check.png' });
@@ -1055,6 +1059,52 @@ test("ball tracker appears below scoreboard when ball rises into upper screen", 
 
   const normal = await page.evaluate(() => window.rallyGame.ballTrackerState());
   expect(normal.active).toBe(false);
+
+  expect(errors).toEqual([]);
+});
+
+test("fullscreen toggle: button click and F key toggle arena presentation, label changes to WINDOW, and returns cleanly", async ({ page }) => {
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+
+  const fsBtn = page.locator("#toggle-fullscreen");
+  await expect(fsBtn).toBeVisible();
+  await expect(fsBtn.locator(".fs-text")).toHaveText("FULLSCREEN");
+  await expect(fsBtn.locator(".icon-expand")).toBeVisible();
+  await expect(fsBtn.locator(".icon-compress")).toBeHidden();
+  expect(await page.evaluate(() => window.rallyGame.isFullscreen())).toBe(false);
+
+  // 1. Click button to enter fullscreen
+  await fsBtn.click();
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(true);
+  await expect(fsBtn.locator(".fs-text")).toHaveText("WINDOW");
+  await expect(fsBtn.locator(".icon-compress")).toBeVisible();
+  await expect(fsBtn.locator(".icon-expand")).toBeHidden();
+
+  // Arena has is-fullscreen class or fullscreen mode applied
+  const isFsClass = await page.evaluate(() => document.querySelector(".arena").classList.contains("is-fullscreen"));
+  const isNative = await page.evaluate(() => Boolean(document.fullscreenElement));
+  expect(isFsClass || isNative).toBe(true);
+  await page.screenshot({ path: "test-results/fullscreen-mode.png" });
+
+  // 2. Press F to return to windowed mode
+  await page.keyboard.press("KeyF");
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(false);
+  await expect(fsBtn.locator(".fs-text")).toHaveText("FULLSCREEN");
+  await expect(fsBtn.locator(".icon-expand")).toBeVisible();
+  await expect(fsBtn.locator(".icon-compress")).toBeHidden();
+  await page.screenshot({ path: "test-results/windowed-mode.png" });
+
+  // 3. Press F again to enter fullscreen
+  await page.keyboard.press("KeyF");
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(true);
+  await expect(fsBtn.locator(".fs-text")).toHaveText("WINDOW");
+
+  // 4. Press Escape to return to windowed mode
+  await page.keyboard.press("Escape");
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(false);
+  await expect(fsBtn.locator(".fs-text")).toHaveText("FULLSCREEN");
 
   expect(errors).toEqual([]);
 });

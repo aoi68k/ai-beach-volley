@@ -25,10 +25,21 @@
       </p>
     </section>
 
-    <section class="arena">
+    <section class="arena" id="arena">
       <div class="arena-top">
         <span><i></i> LIVE FROM SUNSET BEACH</span>
-        <span id="status">先に11点で勝利</span>
+        <div class="arena-top-actions">
+          <span id="status">先に11点で勝利</span>
+          <button id="toggle-fullscreen" class="fullscreen-btn" type="button" aria-label="フルスクリーンの切り替え" title="フルスクリーンの切り替え (F)">
+            <svg class="icon-expand" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+            </svg>
+            <svg class="icon-compress" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+              <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>
+            </svg>
+            <span class="fs-text">FULLSCREEN</span>
+          </button>
+        </div>
       </div>
       <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
       <div id="overlay" class="overlay" aria-labelledby="overlay-title">
@@ -48,8 +59,73 @@
       </div>
       <div class="arena-bottom">
         <span>← → MOVE &nbsp; ↑ JUMP &nbsp; A SHOT &nbsp; B SET</span>
-        <span>SPACE / 一時停止 &nbsp; R / リスタート</span>
+        <span>SPACE / 一時停止 &nbsp; R / リスタート &nbsp; F / フルスクリーン</span>
       </div>
+      <dialog id="gamepad-config" aria-labelledby="gamepad-config-title">
+        <div class="config-heading">
+          <div><p class="eyebrow">CONTROLLER SETTINGS</p><h2 id="gamepad-config-title">GAMEPAD CONFIG</h2></div>
+          <button id="close-gamepad-config" aria-label="閉じる">✕</button>
+        </div>
+        <div id="gamepad-status-bar" class="config-status-bar">
+          <span class="status-icon">🎮</span>
+          <span id="gamepad-status-text">コントローラーを検出中...</span>
+        </div>
+
+        <div class="config-tabs" id="gamepad-player-tabs" role="tablist">
+          <button class="config-tab active" data-player="1" role="tab" aria-selected="true">1P</button>
+          <button class="config-tab" data-player="2" role="tab" aria-selected="false">2P</button>
+          <button class="config-tab" data-player="3" role="tab" aria-selected="false">3P</button>
+          <button class="config-tab" data-player="4" role="tab" aria-selected="false">4P</button>
+        </div>
+
+        <div class="config-body">
+          <div class="config-device-row">
+            <label for="gamepad-select">使用するコントローラー:</label>
+            <select id="gamepad-select"></select>
+          </div>
+
+          <div class="config-table-wrap">
+            <table class="config-table">
+              <thead>
+                <tr>
+                  <th>ボタン</th>
+                  <th>アクション</th>
+                  <th>現在の割り当て</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="gamepad-bindings-body"></tbody>
+            </table>
+          </div>
+
+          <div id="gamepad-capture-overlay" class="capture-overlay" hidden>
+            <div class="capture-card">
+              <p class="eyebrow">PRESS A BUTTON</p>
+              <p class="capture-action-name" id="capture-action-name">A（ショット）</p>
+              <p class="capture-instruction">割り当てたいコントローラーのボタンを押してください</p>
+              <small class="capture-tip">※Escキーまたはキャンセルで中止</small>
+              <button id="cancel-capture-btn" class="cancel-capture-btn">キャンセル</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-footer">
+          <button id="reset-gamepad-config" class="btn-subtle">標準設定に戻す</button>
+          <button id="close-gamepad-config-btn" class="btn-primary">完了</button>
+        </div>
+      </dialog>
+      <dialog id="lobby" aria-labelledby="lobby-title">
+        <div class="lobby-heading"><div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div><button id="close-lobby" aria-label="閉じる">✕</button></div>
+        <p id="lobby-intro">4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
+        <div id="lobby-tabs" class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
+        <div class="join-row"><label>部屋コード <input id="room-code" maxlength="80" placeholder="招待されたコードを入力" autocomplete="off"></label><button id="join-room">参加する</button></div>
+        <div id="room-details" hidden><label>招待リンク <input id="invite-link" readonly></label><button id="copy-invite">コピー</button><button id="leave-room">部屋を退出</button></div>
+        <p id="lobby-message" role="status" aria-live="polite">同じ端末の1P〜4P、またはCOMを割り当てます。</p>
+        <div id="player-slots" class="player-slots"></div>
+        <p id="lobby-help">同じ操作担当は1キャラまで。空いたキャラはCOMにできます。</p>
+        <button id="launch-match" class="launch-match">この担当で試合開始 ↗</button>
+        <small id="lobby-notes">オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
+      </dialog>
     </section>
 
     <section class="settings">
@@ -107,71 +183,6 @@
       <span>QUICK · DOUBLE · SPECIAL</span>
     </footer>
   </main>
-  <dialog id="gamepad-config" aria-labelledby="gamepad-config-title">
-    <div class="config-heading">
-      <div><p class="eyebrow">CONTROLLER SETTINGS</p><h2 id="gamepad-config-title">GAMEPAD CONFIG</h2></div>
-      <button id="close-gamepad-config" aria-label="閉じる">✕</button>
-    </div>
-    <div id="gamepad-status-bar" class="config-status-bar">
-      <span class="status-icon">🎮</span>
-      <span id="gamepad-status-text">コントローラーを検出中...</span>
-    </div>
-
-    <div class="config-tabs" id="gamepad-player-tabs" role="tablist">
-      <button class="config-tab active" data-player="1" role="tab" aria-selected="true">1P</button>
-      <button class="config-tab" data-player="2" role="tab" aria-selected="false">2P</button>
-      <button class="config-tab" data-player="3" role="tab" aria-selected="false">3P</button>
-      <button class="config-tab" data-player="4" role="tab" aria-selected="false">4P</button>
-    </div>
-
-    <div class="config-body">
-      <div class="config-device-row">
-        <label for="gamepad-select">使用するコントローラー:</label>
-        <select id="gamepad-select"></select>
-      </div>
-
-      <div class="config-table-wrap">
-        <table class="config-table">
-          <thead>
-            <tr>
-              <th>ボタン</th>
-              <th>アクション</th>
-              <th>現在の割り当て</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="gamepad-bindings-body"></tbody>
-        </table>
-      </div>
-
-      <div id="gamepad-capture-overlay" class="capture-overlay" hidden>
-        <div class="capture-card">
-          <p class="eyebrow">PRESS A BUTTON</p>
-          <p class="capture-action-name" id="capture-action-name">A（ショット）</p>
-          <p class="capture-instruction">割り当てたいコントローラーのボタンを押してください</p>
-          <small class="capture-tip">※Escキーまたはキャンセルで中止</small>
-          <button id="cancel-capture-btn" class="cancel-capture-btn">キャンセル</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="config-footer">
-      <button id="reset-gamepad-config" class="btn-subtle">標準設定に戻す</button>
-      <button id="close-gamepad-config-btn" class="btn-primary">完了</button>
-    </div>
-  </dialog>
-  <dialog id="lobby" aria-labelledby="lobby-title">
-    <div class="lobby-heading"><div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div><button id="close-lobby" aria-label="閉じる">✕</button></div>
-    <p id="lobby-intro">4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
-    <div id="lobby-tabs" class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
-    <div class="join-row"><label>部屋コード <input id="room-code" maxlength="80" placeholder="招待されたコードを入力" autocomplete="off"></label><button id="join-room">参加する</button></div>
-    <div id="room-details" hidden><label>招待リンク <input id="invite-link" readonly></label><button id="copy-invite">コピー</button><button id="leave-room">部屋を退出</button></div>
-    <p id="lobby-message" role="status" aria-live="polite">同じ端末の1P〜4P、またはCOMを割り当てます。</p>
-    <div id="player-slots" class="player-slots"></div>
-    <p id="lobby-help">同じ操作担当は1キャラまで。空いたキャラはCOMにできます。</p>
-    <button id="launch-match" class="launch-match">この担当で試合開始 ↗</button>
-    <small id="lobby-notes">オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
-  </dialog>
   <script src="vendor/peerjs.min.js"></script>
   <script src="assets/characters/idle-alignment.js"></script>
   <script src="js/audio.js"></script>
