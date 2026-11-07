@@ -8,7 +8,8 @@
     ['地上A', 'フライングレシーブ', '離れた球へ移動＋A', '飛び込み開始', f(recovery.flying), `地上でボールから離れている時にボール方向＋Aで飛び込む。飛び込み${f(r.flyingDive)} → 腹ばい${f(r.flyingProne)} → 起き上がり${f(r.flyingGetup)}。自動移動あり。命中時は残り時間（最低${f(r.flyingMinRecovery)}）を再設定。`],
 
     // 地上B
-    ['地上B', 'トス', '地上/空中 B（下＋Bで高トス）', '打球時', f(recovery.set), `自陣へトスを上げる。下＋Bで高いトス。姿勢が残る間と構え中は地上の横移動・ジャンプ不可。ヒット姿勢は${f(r.tossContact)}。`],
+    ['地上B', 'トス', '地上/空中 B', '打球時', f(recovery.set), `自陣へ通常のトスを上げる。姿勢が残る間と構え中は地上の横移動・ジャンプ不可。ヒット姿勢は${f(r.tossContact)}。`],
+    ['地上B', '高トス', '地上/空中 下＋B', '打球時', f(recovery.set), `下＋Bで自陣へ高く打ち上げるオープントス。滞空時間が長く、味方の助走や攻撃タイミングを作りやすい。姿勢が残る間と構え中は地上の横移動・ジャンプ不可。ヒット姿勢は${f(r.tossContact)}。`],
 
     // 空中A
     ['空中A', 'アタック', '空中 A（前＋Aで奥へ）', '着地時', f(r.landingRecovery), `前＋Aはネット頂上より上を狙い相手コート奥へ。空中でA長押し（${f(r.attackCharge)}継続）で最大弾速へチャージ。A解除でリセット。`],
@@ -39,7 +40,8 @@
   const reference = variant => `可変／参考初速 約${Math.round(speeds.referenceServes[variant])}`;
   const motion = {
     'レシーブ': ['なし', '可変（打球位置・着地点による）', '—'],
-    'トス': ['なし', `上向き ${speeds.toss}／高トス ${speeds.highToss}（縦）`, '—'],
+    'トス': ['なし', `上向き ${speeds.toss}（縦）`, '—'],
+    '高トス': ['なし', `上向き ${speeds.highToss}（縦）`, '—'],
     'アタック': ['なし', cap(speeds.attack), '—'],
     'クイック': ['なし', cap(speeds.quick, speeds.quickMax ?? 1350), '—'],
     'ダブルアタック': [kb('中', knockback.double), cap(speeds.attack, Math.round(speeds.attack * speeds.chargeMultiplier)), '—'],

@@ -131,11 +131,11 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(page.locator('#frame-data thead th')).toHaveCount(9);
   const categories = await page.locator('#frame-data-body td.frame-category').allTextContents();
   expect(categories.slice(0, 3)).toEqual(['地上A', '地上A', '地上A']);
-  expect(categories[3]).toBe('地上B');
-  expect(categories.slice(4, 9)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A']);
-  expect(categories.slice(9, 13)).toEqual(['空中B', '空中B', '空中B', '空中B']);
-  expect(categories.slice(13, 19)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
-  expect(categories[19]).toBe('その他');
+  expect(categories.slice(3, 5)).toEqual(['地上B', '地上B']);
+  expect(categories.slice(5, 10)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A']);
+  expect(categories.slice(10, 14)).toEqual(['空中B', '空中B', '空中B', '空中B']);
+  expect(categories.slice(14, 20)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
+  expect(categories[20]).toBe('その他');
   const row=name=>page.getByRole('rowheader',{name,exact:true}).locator('..');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
@@ -143,7 +143,8 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(row('パワーアタック（1sp）')).toContainText('空中 強：初速1800／理論450px');
   await expect(row('アタック')).toContainText('横速度上限 720 → 1080');
   await expect(row('クイック')).toContainText('横速度上限 1177 → 1350');
-  await expect(row('トス')).toContainText('410／高トス 520');
+  await expect(row('トス')).toContainText('上向き 410');
+  await expect(row('高トス')).toContainText('上向き 520');
   await expect(row('フェイント')).toContainText('ブロック無効');
   await expect(row('フェイント')).toContainText('750');
   await expect(row('ループシュート')).toContainText('1150');
