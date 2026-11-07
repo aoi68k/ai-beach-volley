@@ -115,7 +115,14 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(page.locator('#show-frame-data')).toHaveText('フレーム一覧 ↗');
   await page.locator('#show-frame-data').click();
   await expect(page.locator('#frame-data')).toHaveAttribute('open','');
-  await expect(page.locator('#frame-data thead th')).toHaveCount(8);
+  await expect(page.locator('#frame-data thead th')).toHaveCount(9);
+  const categories = await page.locator('#frame-data-body td.frame-category').allTextContents();
+  expect(categories.slice(0, 3)).toEqual(['地上A', '地上A', '地上A']);
+  expect(categories[3]).toBe('地上B');
+  expect(categories.slice(4, 9)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A']);
+  expect(categories.slice(9, 13)).toEqual(['空中B', '空中B', '空中B', '空中B']);
+  expect(categories.slice(13, 19)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
+  expect(categories[19]).toBe('その他');
   const row=name=>page.getByRole('rowheader',{name,exact:true}).locator('..');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
