@@ -306,6 +306,22 @@ test('character preview: single row focus view, tab switching and zoom', async (
   await page.locator('#zoom').selectOption('1.25');
   await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/preview-single-zoom.png' });
 
+  // 5. Pause and verify animation stops completely without jittering or flipping rows
+  await page.locator('#play').click();
+  await expect(page.locator('#play')).toHaveText('再生');
+  const pausedRow = await page.evaluate(() => activeRow);
+  const pausedFrame = await page.evaluate(() => frozen[activeRow]);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => activeRow)).toBe(pausedRow);
+  expect(await page.evaluate(() => frozen[activeRow])).toBe(pausedFrame);
+
+  // 6. Step forward advances frame by 1 and keeps row stable
+  await page.locator('#step').click();
+  const nextFrame = await page.evaluate(() => frozen[activeRow]);
+  const rowFrames = await page.evaluate(() => ACTION_ROWS[activeRow].frames);
+  expect(nextFrame).toBe((pausedFrame + 1) % rowFrames);
+  expect(await page.evaluate(() => activeRow)).toBe(pausedRow);
+
   expect(errors).toEqual([]);
 });
 test('buttons distinguish actionable, selected and disabled states', async ({ page }) => {
@@ -543,7 +559,7 @@ test('receive hit frame and two-state preview load correctly', async ({ page }) 
   await page.goto('/character-preview.html');
   await expect(page.locator('#load-status')).toContainText('レシーブ2状態');
   await page.locator('#play').click();
-  await page.evaluate(() => { frozen[5] = 1; render(0); });
+  await page.evaluate(() => { setRow?.(5); frozen[5] = 1; render(0); });
   await page.locator('#preview').screenshot({ path: 'test-results/receive-preview.png' });
   expect(errors).toEqual([]);
 });

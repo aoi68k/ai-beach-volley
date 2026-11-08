@@ -286,6 +286,8 @@
       const selectedRuns = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-run-selected.png`));
       const legacy = loadImage('assets/volleyball-players-v2.png');
       const blocks = loadImage('assets/characters/block-v2.png');
+      const straightBlocks = loadImage('assets/characters/block-straight-v1.png');
+      const STRAIGHT_BLOCK_BASELINES = [730, 730, 734, 730].map(y => y / 512);
       const attackSwoosh = loadImage('assets/effects/attack-swoosh-v1.png');
       const tossHits = loadImage('assets/characters/toss-hit-v2.png');
       const receiveHits = loadImage('assets/characters/receive-hit-v1.png');
@@ -392,6 +394,7 @@
         }
         updateTabsUI();
       }
+      window.setRow = setRow;
 
       function nextRow() {
         if (viewMode === 'all') setRow(0);
@@ -437,6 +440,17 @@
       stepBackButton.onclick = () => stepFrame(-1);
 
       function drawCell(row, athleteIndex, frame, y) {
+        if (row === 6 && frame === 0 && straightBlocks.complete && straightBlocks.naturalWidth) {
+          const cw = straightBlocks.naturalWidth / 2, ch = straightBlocks.naturalHeight / 2;
+          const size = 144 * 100 / 112;
+          ctx.save();
+          ctx.translate(190 + athleteIndex * 240, y + 140);
+          if (flipCheckbox.checked) ctx.scale(-1, 1);
+          ctx.drawImage(straightBlocks, athleteIndex % 2 * cw, Math.floor(athleteIndex / 2) * ch,
+            cw, ch, -size / 2, -size * STRAIGHT_BLOCK_BASELINES[athleteIndex], size, size * ch / cw);
+          ctx.restore();
+          return;
+        }
         if (row === 8) {
           if (!serves.complete || !serves.naturalWidth) return;
           const cw = serves.naturalWidth / 4, ch = serves.naturalHeight / 2;
@@ -495,17 +509,6 @@
         const dt = Math.min(0.04, (now - last) / 1000 || 0);
         last = now;
         if (playing) clock += dt * Number(speedSelect.value);
-
-        // 外部（テスト等）から frozen[r] が直接操作された場合に追従
-        if (!playing && viewMode === 'single') {
-          for (let r = 0; r < ACTION_ROWS.length; r++) {
-            if (frozen[r] !== 0 && activeRow !== r) {
-              activeRow = r;
-              updateTabsUI();
-              break;
-            }
-          }
-        }
 
         ctx.fillStyle = backgroundSelect.value;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
