@@ -1214,6 +1214,45 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
     const hitNet = run("audioEvents.some(e => e.name === 'net')");
     assert.equal(hitNet, false, "loop shot must never touch the net");
   }
+
+  // --- Receive and Toss Forward Vector Rules ---
+  // 1. Receive from 1st touch maintains forward vector even when back is held or standing near net
+  run('mode=5;reset();running=true;serveTimer=0;ball.touchSide=null;ball.teamTouches=0;');
+  // Coral player standing at X=520 (past the 505 own-target) receiving with back held
+  run('players[0].x=520;players[0].y=FLOOR;ball.x=520;ball.y=FLOOR-39;');
+  run('hit(players[0],false,undefined,false,true,false);'); // forward=false, back=true
+  const rcvVx1 = run('ball.vx');
+  assert(rcvVx1 >= 90, `1st touch receive with back held near net must have forward vx >= 90, got ${rcvVx1}`);
+
+  // Blue player standing at X=680 receiving with back held (blue forward is negative)
+  run('mode=5;reset();running=true;serveTimer=0;ball.touchSide=null;ball.teamTouches=0;');
+  run('players[2].x=680;players[2].y=FLOOR;ball.x=680;ball.y=FLOOR-39;');
+  run('hit(players[2],false,undefined,false,true,false);');
+  const rcvVxBlue = run('ball.vx');
+  assert(rcvVxBlue <= -90, `Blue 1st touch receive with back held must have forward vx <= -90, got ${rcvVxBlue}`);
+
+  // 2. Receive on 3rd touch flies forward toward/across net
+  run('mode=5;reset();running=true;serveTimer=0;ball.touchSide=0;ball.teamTouches=2;'); // already 2 touches on Coral side
+  run('players[0].x=300;players[0].y=FLOOR;ball.x=300;ball.y=FLOOR-39;');
+  run('hit(players[0],false,undefined,false,true,false);'); // 3rd touch receive
+  const rcvVx3 = run('ball.vx');
+  assert(rcvVx3 >= 190, `3rd touch receive must fly forward across net (vx >= 190), got ${rcvVx3}`);
+  assert.equal(run('ball.lastWasReturn'), true, '3rd touch receive must be flagged as return');
+
+  // 3. Toss on 1st, 2nd, 3rd touch can go straight up / in own court
+  run('mode=5;reset();running=true;serveTimer=0;ball.touchSide=0;ball.teamTouches=2;'); // 3rd touch toss
+  run('players[0].x=505;players[0].y=FLOOR;ball.x=505;ball.y=FLOOR-39;');
+  run('hit(players[0],true,undefined,false,false,false);'); // set (toss)
+  const tossVx3 = run('ball.vx');
+  assert(Math.abs(tossVx3) < 50, `3rd touch toss at net should be able to go straight up, got ${tossVx3}`);
+
+  // 4. Toss on 4th touch has forward vector applied
+  run('mode=5;reset();running=true;serveTimer=0;ball.touchSide=0;ball.teamTouches=3;'); // already 3 touches, this is 4th touch!
+  run('players[0].x=505;players[0].y=FLOOR;ball.x=505;ball.y=FLOOR-39;');
+  run('hit(players[0],true,undefined,false,false,false);'); // 4th touch toss
+  const tossVx4 = run('ball.vx');
+  assert(tossVx4 >= 170, `4th touch toss must have forward vector >= 170, got ${tossVx4}`);
+  assert.equal(run('ball.lastWasReturn'), true, '4th touch toss must be flagged as return');
 }
 
 console.log('PASS: animation, directional/power serves, reception knockback, COM tactics, charge, landing recovery, specials, audio and physics.');

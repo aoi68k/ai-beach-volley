@@ -1145,9 +1145,13 @@ function hit(p, set, forcedType, forward = false, back = false, down = false, up
     ball.lastHitter.side === p.side;
 
   set = type === 'set';
+  const touchCount = touchesBefore(p) + 1;
   const isReceive = type === 'receive' || type === 'flying' || isPowerReceive;
-  const localReceive = isReceive && (isPowerReceive || assistReceive || (p.human && p.y >= FLOOR && !forward));
-  const ownTarget = isPowerReceive || (!special && (set || localReceive));
+  // 3手目以降のレシーブは自陣にとどまらず前（相手コート）へ飛ばす
+  const localReceive = isReceive && (isPowerReceive || assistReceive || (p.human && p.y >= FLOOR && !forward && touchCount < 3));
+  // トスも4手目以降は自陣ターゲットではなく前（相手コート側）へ飛ばす
+  const isFourthToss = set && !special && touchCount >= 4;
+  const ownTarget = isPowerReceive || (!special && !isFourthToss && (set || localReceive));
 
   const target =
     isPowerReceive
@@ -1171,9 +1175,12 @@ function hit(p, set, forcedType, forward = false, back = false, down = false, up
   const air = type === 'attack';
   let duration = type === 'feint' ? 0.75 : set ? 1.05 : air ? 0.75 : type === 'flying' ? 1.6 : 1.25;
   const endY = FLOOR - 14;
-  const tossSpeed = isPowerReceive ? TOSS_SPEEDS.powerReceive : down ? TOSS_SPEEDS.high : TOSS_SPEEDS.normal;
+  let tossSpeed = isPowerReceive ? TOSS_SPEEDS.powerReceive : down ? TOSS_SPEEDS.high : TOSS_SPEEDS.normal;
 
   if (set || isPowerReceive) {
+    if (isFourthToss && tossSpeed < TOSS_SPEEDS.high) {
+      tossSpeed = Math.max(tossSpeed, 490);
+    }
     duration = (tossSpeed + Math.sqrt(tossSpeed * tossSpeed + 2 * GRAVITY * Math.max(0, endY - ball.y))) / GRAVITY;
   }
 
@@ -1189,6 +1196,25 @@ function hit(p, set, forcedType, forward = false, back = false, down = false, up
   ball.vx = (target - ball.x) / duration;
   ball.vy = (endY - ball.y - 0.5 * GRAVITY * duration * duration) / duration;
   if (set || isPowerReceive) { ball.vy = -tossSpeed; ball.tossId = (ball.tossId || 0) + 1; }
+
+  const fwd = playerForward(p);
+
+  // レシーブ: 1手目から前方向のベクトルを持つ（後ろ押しながらレシーブでも前方向ベクトルを消せない）
+  // タッチ回数3以上ならより強く前（相手コート）へ飛ぶ
+  if (isReceive && !isPowerReceive) {
+    const minReceiveFwdVx = touchCount >= 3 ? 190 : 90;
+    if (ball.vx * fwd < minReceiveFwdVx) {
+      ball.vx = fwd * minReceiveFwdVx;
+    }
+  }
+
+  // トス: 3手目までは上に上げられるが、4手目以降は前に行くベクトルがかかる
+  if (isFourthToss) {
+    const minTossFwdVx = down ? 170 : 200;
+    if (ball.vx * fwd < minTossFwdVx) {
+      ball.vx = fwd * minTossFwdVx;
+    }
+  }
 
   if (type === 'loop') {
     const loopDuration = 1.16;
