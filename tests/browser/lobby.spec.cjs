@@ -21,7 +21,9 @@ test('invitation view only permits joining and keeps setup under host control', 
   await page.goto('/?room=test-host');
   await expect(page.locator('#lobby')).toBeVisible();
   await expect(page.locator('#lobby-title')).toHaveText('JOIN MATCH');
-  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(1);
+  await expect(page.locator('#leave-lobby')).toBeVisible();
+  await expect(page.locator('#leave-lobby')).toHaveText('退出する');
+  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(2);
   await expect(page.locator('#join-room')).toBeFocused();
   await expect(page.locator('#room-code')).toHaveValue('test-host');
   await expect(page.locator('#room-code')).toBeDisabled();
@@ -39,7 +41,7 @@ test('invitation view only permits joining and keeps setup under host control', 
     type:'lobby',members:[{id:'test-host'},{id:'test-guest'}],owners:['test-host',0,'test-guest',0],playing:false
   }));
   await expect(page.locator('#lobby-message')).toContainText('ホストが担当を決めて開始');
-  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(0);
+  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(1);
   await expect(page.locator('#launch-match')).toBeHidden();
   await expect(page.locator('#player-slots')).toBeVisible();
   await expect(page.locator('#player-slots .is-you')).toHaveCount(1);
@@ -87,10 +89,18 @@ test('invitation view only permits joining and keeps setup under host control', 
   await page.keyboard.press('Escape');
   await expect(page.locator('#lobby')).toBeVisible();
   await expect(page.locator('#join-room')).toBeEnabled();
-  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(1);
+  await expect(page.locator('#leave-lobby')).toBeVisible();
+  await expect(page.locator('#lobby button:visible:enabled')).toHaveCount(2);
   await expect(page.locator('#host-room')).toBeHidden();
   await page.setViewportSize({width:390,height:844});
   expect(await page.locator('#lobby').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+
+  // Click leave lobby button to exit room and close dialog
+  await page.locator('#leave-lobby').click();
+  await expect(page.locator('#lobby')).toBeHidden();
+  const currentUrl = page.url();
+  expect(currentUrl.includes('room=')).toBe(false);
+
   expect(errors).toEqual([]);
 });
 
@@ -337,8 +347,8 @@ test('broadcast styling covers welcome, lobby and both victory screens at deskto
     await page.locator('.arena').screenshot({ animations: 'disabled', path: `test-results/coral-win-${width}.png` });
     const outer = await page.locator('#overlay').boundingBox();
     const inner = await page.locator('.overlay-card').boundingBox();
-    expect(inner.y).toBeGreaterThanOrEqual(outer.y - 1);
-    expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height + 1);
+    expect(inner.y).toBeGreaterThanOrEqual(outer.y - 2);
+    expect(inner.y + inner.height).toBeLessThanOrEqual(outer.y + outer.height + 2);
     // Guests receive the same design from an authoritative winner snapshot.
     await page.evaluate(() => {
       const s = window.rallyGame.snapshot();

@@ -9,7 +9,7 @@
     return null;
   };
   const game = window.rallyGame;
-  const invited = new URL(location.href).searchParams.get('room');
+  let invited = new URL(location.href).searchParams.get('room');
   const participantView = () => !!invited || guest;
   const names = ['コーラル / 男性', 'コーラル / 女性', 'ブルー / 男性', 'ブルー / 女性'];
   const idle = () => ({ move: 0, jump: false, up: false, shot: false, set: false, down: false });
@@ -39,6 +39,8 @@
     for (const id of ['launch-match', 'lobby-tabs', 'local-mode', 'host-room', 'close-lobby']) {
       $(id).hidden = participant;
     }
+    const leaveLobbyBtn = $('leave-lobby');
+    if (leaveLobbyBtn) leaveLobbyBtn.hidden = !participant;
     $('player-slots').hidden = false;
     $('room-code').disabled = online || !!invited;
     $('room-code').readOnly = !!invited;
@@ -320,6 +322,24 @@
     }
   }, { capture: true });
   $('close-lobby').onclick = () => { if (!participantView()) $('lobby').close(); };
+  const leaveBtn = $('leave-lobby');
+  if (leaveBtn) {
+    leaveBtn.onclick = () => {
+      invited = null;
+      if (typeof window !== 'undefined' && window.history?.replaceState) {
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('room');
+          window.history.replaceState(null, '', url.pathname + (url.search || ''));
+        } catch (_) {}
+      }
+      const roomCodeInput = $('room-code');
+      if (roomCodeInput) roomCodeInput.value = '';
+      teardown();
+      $('lobby')?.close?.();
+      render();
+    };
+  }
   $('local-mode').onclick = () => { if (participantView()) return; teardown(); show(); message('この端末の操作担当を選んでください。'); };
   $('host-room').onclick = () => { if (!participantView()) connect(); };
   $('join-room').onclick = () => {

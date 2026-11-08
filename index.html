@@ -176,7 +176,13 @@
         </div>
       </dialog>
       <dialog id="lobby" aria-labelledby="lobby-title">
-        <div class="lobby-heading"><div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div><button id="close-lobby" aria-label="閉じる">✕</button></div>
+        <div class="lobby-heading">
+          <div><p class="eyebrow">BEFORE THE FIRST SERVE</p><h2 id="lobby-title">PLAYER SETUP</h2></div>
+          <div class="lobby-heading-actions">
+            <button id="leave-lobby" class="leave-lobby-btn" hidden>退出する</button>
+            <button id="close-lobby" aria-label="閉じる">✕</button>
+          </div>
+        </div>
         <p id="lobby-intro">4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。</p>
         <div id="lobby-tabs" class="lobby-tabs"><button id="local-mode">同じ端末で遊ぶ</button><button id="host-room">オンラインの部屋を作る</button></div>
         <div class="join-row"><label>部屋コード <input id="room-code" maxlength="80" placeholder="招待されたコードを入力" autocomplete="off"></label><button id="join-room">参加する</button></div>

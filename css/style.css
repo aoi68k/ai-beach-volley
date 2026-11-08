@@ -649,6 +649,29 @@ dialog::backdrop { background: #123e58b0; backdrop-filter: blur(5px); }
 .lobby-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding: 22px 28px; margin: -28px -28px 18px; background: var(--navy); border-bottom: 3px solid var(--blue); color: #fff9e5; }
 .lobby-heading h2 { font: italic 900 clamp(30px, 5vw, 52px)/1 'Barlow Condensed', Impact, sans-serif; text-shadow: 2px 3px #24748a; }
 .lobby-heading .eyebrow { margin-bottom: 6px; color: var(--blue); }
+.lobby-heading-actions { display: flex; align-items: center; gap: 8px; }
+.leave-lobby-btn {
+  padding: 6px 14px;
+  border: 1px solid #d5f1ee60;
+  background: #ffffff14;
+  color: #fff9e5;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: 5px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s, border-color 0.15s, transform 0.08s;
+}
+.leave-lobby-btn:hover {
+  background: rgba(224, 90, 58, 0.45);
+  border-color: var(--coral);
+}
+.leave-lobby-btn:active {
+  transform: scale(0.96);
+}
+.leave-lobby-btn[hidden] {
+  display: none !important;
+}
 #close-lobby { padding: 7px 11px; border-color: #d5f1ee50; background: #ffffff0a; color: #fff9e5; }
 dialog p, dialog label { font-size: 13px; line-height: 1.8; }
 .lobby-tabs, .join-row, #room-details { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 14px 0; }
