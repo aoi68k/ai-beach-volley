@@ -21,6 +21,7 @@ const element = () => ({
   append() {},
   firstChild: {},
   textContent: '',
+  querySelectorAll: () => [],
   getContext: () => ctx
 });
 
@@ -37,6 +38,7 @@ const document = {
 class Image {
   complete = true;
   get naturalWidth() {
+    if (this.src?.includes('block-v2')) return 1086;
     if (this.src?.includes('serve-v1')) return 1774;
     return this.src?.includes('flying-receive')
       ? 2064
@@ -47,6 +49,7 @@ class Image {
           : 1536;
   }
   get naturalHeight() {
+    if (this.src?.includes('block-v2')) return 1448;
     if (this.src?.includes('serve-v1')) return 887;
     return this.src?.includes('flying-receive')
       ? 1536
@@ -285,20 +288,24 @@ for (let athlete = 0; athlete < 4; athlete++) {
 assert(!fs.readFileSync('js/game.js', 'utf8').includes('back-dash'));
 assert(!fs.readFileSync('js/game.js', 'utf8').includes('-run-v4'));
 assert(!fs.readFileSync('character-preview.html', 'utf8').includes('-run-v4'));
-// The block hitbox selects fixed source cell 3; recoveryFrames selects source cell 5.
+// Logical block frames 2/3/4 map to the new atlas columns 0/1/2.
 for (let athlete = 0; athlete < 4; athlete++) {
   run(`reset();players[${athlete}].y=FLOOR-100;showAction(players[${athlete}], 'block');players[${athlete}].blockFrames=.4;`);
   for (const remaining of [.4, .2, .001, 0]) {
     run(`players[${athlete}].blockFrames=${remaining};drawPlayer(players[${athlete}]);`);
     const call = draws.at(-1);
-    assert.equal(call[0].src, 'assets/characters/block-v1.png');
-    assert.deepEqual(call.slice(1, 5), [(remaining > 0 ? 2 : 4) * 256, athlete * 256, 256, 256]);
+    assert.equal(call[0].src, 'assets/characters/block-v2.png');
+    assert.deepEqual(call.slice(1, 5), [(remaining > 0 ? 0 : 2) * 362, athlete * 362, 362, 362]);
+    assert.deepEqual(call.slice(7, 9), [120, 120]);
   }
 }
 // A successful interception removes the hitbox and shows source cell 4.
 run("reset();players[0].y=FLOOR-100;players[0].x=NET-30;players[0].blockFrames=.3;showAction(players[0],'block');ball.x=players[0].x;ball.y=players[0].y-75;ball.lastSide=1;ball.lastShot='attack';");
 assert.equal(run('tryBlock(players[0])'), true);
 assert.deepEqual(pose(), { block: true, frame: 3 });
+run('drawPlayer(players[0]);');
+assert.equal(draws.at(-1)[0].src, 'assets/characters/block-v2.png');
+assert.deepEqual(draws.at(-1).slice(1, 5), [362, 0, 362, 362]);
 run("showAction(players[0], 'block');players[0].blockFrames=.4;");
 assert.deepEqual(pose(), { block: true, frame: 2 });
 run('players[0].blockFrames=0;');
