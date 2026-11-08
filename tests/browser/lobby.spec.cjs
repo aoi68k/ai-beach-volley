@@ -160,13 +160,34 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(page.locator('#frame-data')).toHaveAttribute('open','');
   await expect(page.locator('#frame-data thead th')).toHaveCount(9);
   const categories = await page.locator('#frame-data-body td.frame-category').allTextContents();
-  expect(categories.slice(0, 3)).toEqual(['地上A', '地上A', '地上A']);
-  expect(categories.slice(3, 5)).toEqual(['地上B', '地上B']);
-  expect(categories.slice(5, 11)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A', '空中A']);
-  expect(categories.slice(11, 15)).toEqual(['空中B', '空中B', '空中B', '空中B']);
-  expect(categories.slice(15, 21)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
-  expect(categories[21]).toBe('その他');
+  expect(categories.slice(0, 4)).toEqual(['地上A', '地上A', '地上A', '地上A']);
+  expect(categories.slice(4, 6)).toEqual(['地上B', '地上B']);
+  expect(categories.slice(6, 12)).toEqual(['空中A', '空中A', '空中A', '空中A', '空中A', '空中A']);
+  expect(categories.slice(12, 16)).toEqual(['空中B', '空中B', '空中B', '空中B']);
+  expect(categories.slice(16, 22)).toEqual(['サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ', 'サーブ']);
+  expect(categories[22]).toBe('その他');
+
+  const actionHeaders = await page.locator('#frame-data-body th[scope="row"]').allTextContents();
+  expect(actionHeaders).toEqual([
+    // 地上A: 方向なしが一番上、十字操作はその下
+    'レシーブ', 'ダイレクトレシーブ', 'パワーレシーブ（1sp）', 'フライングレシーブ',
+    // 地上B: 方向なしが一番上、十字操作はその下
+    'トス', 'ハイセット',
+    // 空中A: 方向なしが一番上、十字操作はその下
+    'アタック', 'クイック', 'ダブルアタック', 'ディープアタック', 'ループシュート', 'パワーアタック（1sp）',
+    // 空中B: 方向なしが一番上、十字操作はその下
+    'キルブロック（ネット直上／相手側でブロック）', 'ソフトブロック（自陣側でブロック）', 'フェイント', 'モズ落とし（1sp）',
+    // サーブ: 方向なしが一番上、十字操作はその下
+    '地上サーブ（B）', 'ジャンプサーブ（方向なし）', 'ジャンプサーブ（前＋A）', 'ジャンプサーブ（上＋A）', 'ジャンプサーブ（後ろ＋A）', 'パワーサーブ（1sp）',
+    // その他
+    'ジャンプ・着地'
+  ]);
+
   const row=name=>page.getByRole('rowheader',{name,exact:true}).locator('..');
+  await expect(row('レシーブ')).toContainText('地上 A（方向なし）');
+  await expect(row('レシーブ')).toContainText('自陣ネット手前へ上げる軌道');
+  await expect(row('ダイレクトレシーブ')).toContainText('地上 前＋A');
+  await expect(row('ダイレクトレシーブ')).toContainText('相手コートへ返す軌道');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
   await expect(row('パワーアタック（1sp）')).toContainText('地上 弱：初速900／理論225px');
