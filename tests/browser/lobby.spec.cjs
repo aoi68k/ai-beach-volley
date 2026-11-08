@@ -1323,3 +1323,137 @@ test("popout arena: button and P key open independent window with placeholder an
 
   expect(errors).toEqual([]);
 });
+
+test('touch controls appear on touch devices with D-Pad and A/B buttons, and route input', async ({ browser }) => {
+  // 1. Desktop context without touch: touch controls should be hidden
+  const desktopContext = await browser.newContext();
+  const desktopPage = await desktopContext.newPage();
+  await desktopPage.goto('/');
+  await expect(desktopPage.locator('#touch-controls')).toBeHidden();
+  await desktopContext.close();
+
+  // 2. Mobile touch context: touch controls should be visible
+  const mobileContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true
+  });
+  const page = await mobileContext.newPage();
+  await page.goto('/');
+
+  const controls = page.locator('#touch-controls');
+  await expect(controls).toBeVisible();
+
+  const dpad = page.locator('#touch-dpad');
+  const btnUp = page.locator('.dpad-up');
+  const btnDown = page.locator('.dpad-down');
+  const btnLeft = page.locator('.dpad-left');
+  const btnRight = page.locator('.dpad-right');
+  const btnA = page.locator('.action-a');
+  const btnB = page.locator('.action-b');
+
+  await expect(dpad).toBeVisible();
+  await expect(btnUp).toBeVisible();
+  await expect(btnDown).toBeVisible();
+  await expect(btnLeft).toBeVisible();
+  await expect(btnRight).toBeVisible();
+  await expect(btnA).toBeVisible();
+  await expect(btnB).toBeVisible();
+
+  // Test Button A (SHOT) touch
+  await btnA.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 10, clientX: 300, clientY: 700 }]
+  });
+  let state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.shot).toBe(true);
+  await expect(btnA).toHaveClass(/is-active/);
+
+  await page.dispatchEvent('body', 'touchend', {
+    changedTouches: [{ identifier: 10, clientX: 300, clientY: 700 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.shot).toBe(false);
+
+  // Test Button B (SET) touch
+  await btnB.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 11, clientX: 250, clientY: 700 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.set).toBe(true);
+  await expect(btnB).toHaveClass(/is-active/);
+
+  await page.dispatchEvent('body', 'touchend', {
+    changedTouches: [{ identifier: 11, clientX: 250, clientY: 700 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.set).toBe(false);
+
+  // Test D-Pad touch routing (right movement & up jump)
+  const dpadBox = await dpad.boundingBox();
+  expect(dpadBox).toBeTruthy();
+  // Touch to the right side of dpad center
+  await dpad.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 12, clientX: dpadBox.x + dpadBox.width * 0.8, clientY: dpadBox.y + dpadBox.height * 0.5 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.move).toBe(1);
+  await expect(btnRight).toHaveClass(/is-active/);
+
+  // Slide to top-right (diagonal jump move)
+  await page.dispatchEvent('body', 'touchmove', {
+    touches: [{ identifier: 12, clientX: dpadBox.x + dpadBox.width * 0.8, clientY: dpadBox.y + dpadBox.height * 0.2 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.move).toBe(1);
+  expect(state.jump).toBe(true);
+  await expect(btnRight).toHaveClass(/is-active/);
+  await expect(btnUp).toHaveClass(/is-active/);
+
+  // Release D-Pad
+  await page.dispatchEvent('body', 'touchend', {
+    changedTouches: [{ identifier: 12, clientX: dpadBox.x + dpadBox.width * 0.8, clientY: dpadBox.y + dpadBox.height * 0.2 }]
+  });
+  state = await page.evaluate(() => window.touchControls.read(1));
+  expect(state.move).toBe(0);
+  expect(state.jump).toBe(false);
+
+  await page.screenshot({ path: 'test-results/touch-controls-mobile.png' });
+  await mobileContext.close();
+});
+
+test('fullscreen arena on mobile locks scroll and zoom, adds is-arena-fullscreen, and unlocks on exit', async ({ browser }) => {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true
+  });
+  const page = await context.newPage();
+  await page.goto('/');
+
+  const fsBtn = page.locator('#toggle-fullscreen');
+  await fsBtn.click();
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(true);
+
+  // Body and documentElement get fullscreen lock class
+  await expect(page.locator('body')).toHaveClass(/is-arena-fullscreen/);
+  await expect(page.locator('html')).toHaveClass(/is-arena-fullscreen/);
+
+  // Arena has fullscreen presentation applied and touch-action none
+  const arena = page.locator('#arena');
+  const touchAction = await arena.evaluate(el => window.getComputedStyle(el).touchAction);
+  expect(touchAction).toBe('none');
+
+  await page.screenshot({ path: 'test-results/touch-controls-fullscreen.png' });
+
+  // Landscape orientation test
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.screenshot({ path: 'test-results/touch-controls-landscape.png' });
+
+  // Exit fullscreen
+  await fsBtn.click();
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(false);
+  await expect(page.locator('body')).not.toHaveClass(/is-arena-fullscreen/);
+  await expect(page.locator('html')).not.toHaveClass(/is-arena-fullscreen/);
+
+  await context.close();
+});

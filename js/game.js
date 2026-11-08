@@ -360,6 +360,10 @@ function updateFullscreenUI() {
   const active = isFullscreenArena();
   const btn = document.querySelector?.('#toggle-fullscreen');
   const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
+  if (typeof document !== 'undefined') {
+    document.body?.classList?.toggle?.('is-arena-fullscreen', active);
+    document.documentElement?.classList?.toggle?.('is-arena-fullscreen', active);
+  }
   if (arena && arena.classList?.toggle) {
     const doc = typeof document !== 'undefined' ? document : null;
     const nativeActive = Boolean(
@@ -1437,6 +1441,15 @@ function readController(controller, pads) {
     if (keys.has(bSet[i])) { set = true; break; }
   }
   let down = keys.has(b[5]);
+
+  const touchInput = window.touchControls?.read?.(controller);
+  if (touchInput) {
+    if (Math.abs(touchInput.move) > 0.05) move = touchInput.move;
+    jump ||= touchInput.jump;
+    down ||= touchInput.down;
+    shot ||= touchInput.shot;
+    set ||= touchInput.set;
+  }
 
   const gpInput = window.gamepadConfig?.read(controller, pads);
   if (gpInput) {
