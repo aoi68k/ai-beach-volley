@@ -793,6 +793,7 @@ function beginServe(side) {
       : ['normal', 'fast', 'high', 'slow'][Math.floor(Math.random() * 4)] };
   holdServeBall(server);
   updateCamera(0, true);
+  playSfx('serve');
   status();
 }
 
@@ -1024,7 +1025,6 @@ function strikeServe(p, airborne, input = {}) {
       playSfx('empowered');
       triggerSpecialActivation(p, 'powerServe');
     }
-    playSfx('serve');
     status();
     return;
   }
@@ -1039,7 +1039,6 @@ function strikeServe(p, airborne, input = {}) {
   }
   ball.vx = (target - ball.x) / duration;
   ball.vy = (endY - ball.y - .5 * GRAVITY * duration * duration) / duration;
-  playSfx('serve');
   status();
 }
 
@@ -3937,7 +3936,7 @@ window.rallyGame = {
       receivedAudioSequence = event.id;
       if (s.time - event.time < 0.5) {
         window.rallyAudio?.play(event.name);
-        if (['attack', 'receive', 'powerReceive', 'serve', 'set', 'double', 'quick', 'mozu', 'empowered', 'block', 'feint', 'loop'].includes(event.name)) {
+        if (['attack', 'receive', 'powerReceive', 'set', 'double', 'quick', 'mozu', 'empowered', 'block', 'feint', 'loop'].includes(event.name)) {
           spawnGuestHitParticles();
         }
       }

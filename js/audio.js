@@ -520,11 +520,8 @@
     },
 
     serve: () => {
-      // Crisp referee whistle + upbeat two-tone stadium serve chime
-      whistle(0.15, 0.11, 0.0, 2880);
-      tone({ f0: 659.25, f1: 659.25, dur: 0.14, vol: 0.13, type: 'sine', delay: 0.03, pan: -0.15, wet: 0.32 });
-      tone({ f0: 987.77, f1: 987.77, dur: 0.26, vol: 0.15, type: 'triangle', delay: 0.14, hold: 0.08, pan: 0.15, wet: 0.38 });
-      tone({ f0: 1318.51, f1: 1318.51, dur: 0.22, vol: 0.07, type: 'sine', delay: 0.15, pan: -0.1, wet: 0.45 });
+      // Crisp referee whistle indicating serve authorization
+      whistle(0.14, 0.12, 0.0, 2880);
     },
 
     confirm: () => {
