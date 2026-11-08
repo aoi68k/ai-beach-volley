@@ -158,7 +158,7 @@ PeerJS（同梱）を利用した P2P オンライン通信対戦に対応して
 ```text
 assets/avatars/
   manifest.json               # 登録アバター一覧
-  chen/                      # カスタムアバター（小分け形式）
+  chen/                      # 自作カスタムアバターの例
     avatar.json              # アバター定義（名前・作者・形式など）
     portrait.png             # UI表示用アイコン (256x256px)
     01-idle-clean.png        # 待機 (6コマ)
@@ -168,8 +168,10 @@ assets/avatars/
     05-attack-clean.png      # アタック踏み込み〜着地 (6コマ)
     06-defense-clean.png     # 守備 (レシーブ/トス/ブロック 6コマ)
     07-special-serve-clean.png # 特殊 (ブロック成功/フライング/サーブ 6コマ)
-  coral-split/               # 小分け形式のサンプル
-    ...
+  coral-split/               # 1P: コーラル男性 (小分け形式)
+  coral-female-split/        # 2P: コーラル女性 (小分け形式)
+  blue-male-split/           # 3P: ブルー男性 (小分け形式)
+  blue-female-split/         # 4P: ブルー女性 (小分け形式)
 ```
 
 ### アバターの作り方 & 読み込み
