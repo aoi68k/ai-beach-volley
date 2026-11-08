@@ -1861,17 +1861,10 @@ test('gamepad only navigation: detects controller, shows A/B badges, navigates l
   expect(await page.evaluate(() => window.rallyGame.snapshot().running)).toBe(true);
 });
 
-test('switching from online room to local mode shows confirmation only when others are connected', async ({ page }) => {
+test('hosting room disables local-mode button until leave-room is clicked', async ({ page }) => {
   await page.route('**/vendor/peerjs.min.js', route => route.fulfill({
     contentType: 'application/javascript',
     body: `
-      class TestConnection {
-        constructor(peer){this.peer=peer;this.open=true;this.handlers={};this.sent=[];}
-        on(name,fn){this.handlers[name]=fn;}
-        emit(name,data){this.handlers[name]?.(data);}
-        send(data){this.sent.push(data);}
-        close(){this.handlers.close?.();}
-      }
       window.Peer = class {
         constructor(){
           this.handlers = {};
@@ -1879,7 +1872,7 @@ test('switching from online room to local mode shows confirmation only when othe
           queueMicrotask(() => this.handlers.open?.('test-host-id'));
         }
         on(name, fn){ this.handlers[name] = fn; }
-        connect(peer){ const c = new TestConnection(peer); queueMicrotask(() => c.emit('open')); return c; }
+        connect(){ return {}; }
         destroy(){ this.destroyed = true; }
       };
     `
@@ -1892,59 +1885,15 @@ test('switching from online room to local mode shows confirmation only when othe
   // 1. Host creates a room
   await page.locator('#host-room').click();
   await expect(page.locator('#invite-link')).toHaveValue(/test-host-id/);
+  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(true);
 
-  // 2. Local-mode button should remain clickable for host!
+  // 2. While room is active, local-mode button is disabled
   const localModeBtn = page.locator('#local-mode');
+  await expect(localModeBtn).toBeDisabled();
+
+  // 3. Clicking "部屋を退出" leaves room and returns to local mode where local-mode is active
+  await page.locator('#leave-room').click();
+  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(false);
+  await expect(page.locator('#lobby-message')).toContainText('部屋を退出しました');
   await expect(localModeBtn).toBeEnabled();
-
-  // 3. When NO other players are connected, clicking local-mode tears down room directly without confirmation
-  await localModeBtn.click();
-  await expect(page.locator('#room-teardown-confirm')).toBeHidden();
-  await expect(page.locator('#lobby-message')).toContainText('この端末の操作担当を選んでください');
-  // Check online state is false
-  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(false);
-
-  // 4. Create room again and simulate a guest connecting
-  await page.locator('#host-room').click();
-  await expect(page.locator('#invite-link')).toHaveValue(/test-host-id/);
-  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(true);
-
-  // Simulate guest connection
-  await page.evaluate(() => {
-    const conn = {
-      peer: 'guest-peer-id',
-      open: true,
-      handlers: {},
-      on(name, fn) { this.handlers[name] = fn; },
-      send(data) {},
-      close() { this.handlers.close?.(); }
-    };
-    window.testPeer?.handlers?.connection?.(conn);
-    conn.handlers?.open?.();
-  });
-
-  // Verify guest is recognized
-  await expect.poll(() => page.evaluate(() => window.matchLobby.memberCount())).toBe(2);
-
-  // 5. Host clicks local-mode while guest is connected -> confirmation dialog appears
-  await localModeBtn.click();
-  const confirmBox = page.locator('#room-teardown-confirm');
-  await expect(confirmBox).toBeVisible();
-  await expect(confirmBox.locator('.confirm-message')).toContainText('自分以外のプレイヤーが接続中です');
-
-  // 6. Click "いいえ" -> cancel, room is preserved
-  await page.locator('#confirm-teardown-no').click();
-  await expect(confirmBox).toBeHidden();
-  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(true);
-  expect(await page.evaluate(() => window.matchLobby.memberCount())).toBe(2);
-
-  // 7. Click local-mode again -> confirm box appears -> Click "はい（部屋を解散）"
-  await localModeBtn.click();
-  await expect(confirmBox).toBeVisible();
-  await page.locator('#confirm-teardown-yes').click();
-  await expect(confirmBox).toBeHidden();
-
-  // 8. Room is torn down, returned to local mode
-  expect(await page.evaluate(() => window.matchLobby.isOnline())).toBe(false);
-  await expect(page.locator('#lobby-message')).toContainText('部屋を解散しました');
 });
