@@ -59,9 +59,10 @@
     $('room-code').readOnly = !!invited;
     $('room-details').hidden = !online || participant;
     $('lobby-title').textContent = participant ? 'JOIN MATCH' : 'PLAYER SETUP';
+    $('lobby-intro').hidden = !participant;
     $('lobby-intro').textContent = participant
       ? (online ? 'ホストが操作担当を決めて試合を開始します。' : '招待された部屋へオンラインで参加します。')
-      : '4人のキャラを誰が操作する？ 担当を選んでから試合を始めよう。';
+      : '';
     $('lobby-notes').textContent = participant
       ? 'ホストが開始するとゲーム画面へ切り替わります。操作は矢印 / Z・X、またはゲームパッド1です。'
       : 'オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。';
