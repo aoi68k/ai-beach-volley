@@ -77,43 +77,45 @@
           </button>
         </div>
       </div>
-      <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
-      <div id="touch-controls" class="touch-controls" aria-label="オンスクリーンコントローラー" hidden>
-        <div class="touch-dpad" id="touch-dpad" aria-label="十字キー">
-          <div class="dpad-cross">
-            <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="上 (ジャンプ)">▲</button>
-            <div class="dpad-horizontal">
-              <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="左移動">◀</button>
-              <div class="dpad-center" aria-hidden="true"></div>
-              <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="右移動">▶</button>
+      <div class="arena-stage" id="arena-stage">
+        <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
+        <div id="touch-controls" class="touch-controls" aria-label="オンスクリーンコントローラー" hidden>
+          <div class="touch-dpad" id="touch-dpad" aria-label="十字キー">
+            <div class="dpad-cross">
+              <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="上 (ジャンプ)">▲</button>
+              <div class="dpad-horizontal">
+                <button type="button" class="dpad-btn dpad-left" data-dir="left" aria-label="左移動">◀</button>
+                <div class="dpad-center" aria-hidden="true"></div>
+                <button type="button" class="dpad-btn dpad-right" data-dir="right" aria-label="右移動">▶</button>
+              </div>
+              <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="下 (構え/しゃがみ)">▼</button>
             </div>
-            <button type="button" class="dpad-btn dpad-down" data-dir="down" aria-label="下 (構え/しゃがみ)">▼</button>
+          </div>
+          <div class="touch-actions" id="touch-actions" aria-label="アクションボタン">
+            <button type="button" class="action-btn action-b" data-action="set" aria-label="Bボタン (トス/ハイセット/フェイント/ブロック)">
+              <span class="btn-letter">B</span>
+              <span class="btn-sub">SET</span>
+            </button>
+            <button type="button" class="action-btn action-a" data-action="shot" aria-label="Aボタン (アタック/ディープ/ループ/レシーブ)">
+              <span class="btn-letter">A</span>
+              <span class="btn-sub">SHOT</span>
+            </button>
           </div>
         </div>
-        <div class="touch-actions" id="touch-actions" aria-label="アクションボタン">
-          <button type="button" class="action-btn action-b" data-action="set" aria-label="Bボタン (トス/ハイセット/フェイント/ブロック)">
-            <span class="btn-letter">B</span>
-            <span class="btn-sub">SET</span>
-          </button>
-          <button type="button" class="action-btn action-a" data-action="shot" aria-label="Aボタン (アタック/ディープ/ループ/レシーブ)">
-            <span class="btn-letter">A</span>
-            <span class="btn-sub">SHOT</span>
-          </button>
-        </div>
-      </div>
-      <div id="overlay" class="overlay" aria-labelledby="overlay-title">
-        <div class="overlay-card">
-          <span id="overlay-eyebrow" class="eyebrow">SUNSET RALLY / WELCOME TO THE BEACH</span>
-          <h2 id="overlay-title">LET’S RALLY.</h2>
-          <div id="overlay-result" class="overlay-result" hidden aria-label="最終スコア">
-            <span class="result-team">CORAL CLUB</span>
-            <strong id="result-coral">00</strong>
-            <span class="result-divider">FINAL<br>SCORE</span>
-            <strong id="result-blue">00</strong>
-            <span class="result-team">BLUE TIDE</span>
+        <div id="overlay" class="overlay" aria-labelledby="overlay-title">
+          <div class="overlay-card">
+            <span id="overlay-eyebrow" class="eyebrow">SUNSET RALLY / WELCOME TO THE BEACH</span>
+            <h2 id="overlay-title">LET’S RALLY.</h2>
+            <div id="overlay-result" class="overlay-result" hidden aria-label="最終スコア">
+              <span class="result-team">CORAL CLUB</span>
+              <strong id="result-coral">00</strong>
+              <span class="result-divider">FINAL<br>SCORE</span>
+              <strong id="result-blue">00</strong>
+              <span class="result-team">BLUE TIDE</span>
+            </div>
+            <p>キャラの操作担当を決めて、砂浜へ。</p>
+            <button id="start">PLAYER SETUP <span>↗</span></button>
           </div>
-          <p>キャラの操作担当を決めて、砂浜へ。</p>
-          <button id="start">PLAYER SETUP <span>↗</span></button>
         </div>
       </div>
       <div class="arena-bottom">

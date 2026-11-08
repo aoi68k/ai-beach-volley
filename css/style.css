@@ -219,9 +219,21 @@ h1 span {
   margin-right: 8px;
 }
 
+.arena-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1200 / 620;
+  display: block;
+  overflow: hidden;
+  background: #030d14;
+}
+
 canvas {
   display: block;
   width: 100%;
+  height: 100%;
+  aspect-ratio: 1200 / 620;
+  object-fit: contain;
   image-rendering: pixelated;
   transform: translateZ(0);
   contain: layout paint;
@@ -229,7 +241,7 @@ canvas {
 
 .overlay {
   position: absolute;
-  inset: 39px 0 35px;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -238,6 +250,7 @@ canvas {
   color: #fff7df;
   --overlay-accent: var(--blue);
   text-align: center;
+  z-index: 6;
 }
 
 /* --- Fullscreen Arena Presentation --- */
@@ -283,17 +296,25 @@ canvas {
   z-index: 2;
 }
 
+.arena:fullscreen .arena-stage,
+.arena:-webkit-full-screen .arena-stage,
+.arena.is-fullscreen .arena-stage {
+  flex: 0 0 auto;
+  position: relative;
+  width: min(100vw, calc((100vh - 74px) * (1200 / 620)));
+  height: auto;
+  aspect-ratio: 1200 / 620;
+  margin: auto;
+  display: block;
+  overflow: hidden;
+}
+
 .arena:fullscreen canvas,
 .arena:-webkit-full-screen canvas,
 .arena.is-fullscreen canvas {
-  flex: 1 1 auto;
-  width: auto;
-  height: auto;
-  max-width: 100vw;
-  max-height: calc(100vh - 74px);
+  width: 100%;
+  height: 100%;
   aspect-ratio: 1200 / 620;
-  object-fit: contain;
-  margin: auto;
   display: block;
 }
 
@@ -301,8 +322,8 @@ canvas {
 .arena:-webkit-full-screen .overlay,
 .arena.is-fullscreen .overlay {
   position: absolute;
-  inset: 38px 0 34px;
-  z-index: 3;
+  inset: 0;
+  z-index: 6;
 }
 
 /* --- Popout Arena Presentation --- */
@@ -335,22 +356,28 @@ canvas {
   z-index: 2;
 }
 
-.arena.is-popout canvas {
-  flex: 1 1 auto;
-  width: auto;
+.arena.is-popout .arena-stage {
+  flex: 0 0 auto;
+  position: relative;
+  width: min(100vw, calc((100vh - 74px) * (1200 / 620)));
   height: auto;
-  max-width: 100vw;
-  max-height: calc(100vh - 74px);
   aspect-ratio: 1200 / 620;
-  object-fit: contain;
   margin: auto;
+  display: block;
+  overflow: hidden;
+}
+
+.arena.is-popout canvas {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1200 / 620;
   display: block;
 }
 
 .arena.is-popout .overlay {
   position: absolute;
-  inset: 38px 0 34px;
-  z-index: 3;
+  inset: 0;
+  z-index: 6;
 }
 
 .arena-placeholder {
@@ -598,7 +625,7 @@ footer {
   }
 
   .overlay {
-    inset: 35px 0 28px;
+    inset: 0;
   }
   .overlay-card { padding: 5px 8px; transform: none; }
   .overlay .eyebrow { font-size: 7px; padding: 4px 8px; margin-bottom: 5px; letter-spacing: 1px; }
@@ -765,7 +792,7 @@ body.is-arena-fullscreen {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 18px 20px;
+  padding: 12px 16px;
   box-sizing: border-box;
   user-select: none;
   -webkit-user-select: none;
@@ -779,8 +806,8 @@ body.is-arena-fullscreen {
 /* D-Pad Container */
 .touch-dpad {
   position: relative;
-  width: 140px;
-  height: 140px;
+  width: 136px;
+  height: 136px;
   pointer-events: auto;
   touch-action: none;
   display: flex;
@@ -790,8 +817,8 @@ body.is-arena-fullscreen {
 
 .dpad-cross {
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: 128px;
+  height: 128px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -806,7 +833,7 @@ body.is-arena-fullscreen {
 }
 
 .dpad-btn {
-  background: rgba(10, 32, 48, 0.72);
+  background: rgba(10, 32, 48, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.22);
   color: #c9e2ef;
   font-size: 15px;
@@ -825,8 +852,8 @@ body.is-arena-fullscreen {
 }
 
 .dpad-up, .dpad-down {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
 }
 
 .dpad-up {
@@ -840,8 +867,8 @@ body.is-arena-fullscreen {
 }
 
 .dpad-left, .dpad-right {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
 }
 
 .dpad-left {
@@ -855,9 +882,9 @@ body.is-arena-fullscreen {
 }
 
 .dpad-center {
-  width: 44px;
-  height: 44px;
-  background: rgba(10, 32, 48, 0.88);
+  width: 42px;
+  height: 42px;
+  background: rgba(10, 32, 48, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.14);
   pointer-events: none;
   box-sizing: border-box;
@@ -877,13 +904,13 @@ body.is-arena-fullscreen {
   pointer-events: auto;
   touch-action: none;
   display: flex;
-  gap: 16px;
+  gap: 14px;
   align-items: flex-end;
 }
 
 .action-btn {
-  width: 62px;
-  height: 62px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.35);
   display: flex;
@@ -903,7 +930,7 @@ body.is-arena-fullscreen {
 
 .action-btn .btn-letter {
   font-family: inherit;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1;
   color: #fff;
@@ -911,7 +938,7 @@ body.is-arena-fullscreen {
 }
 
 .action-btn .btn-sub {
-  font-size: 8.5px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: 0.8px;
   line-height: 1;
@@ -921,13 +948,13 @@ body.is-arena-fullscreen {
 }
 
 .action-a {
-  background: radial-gradient(circle at 35% 35%, rgba(242, 116, 84, 0.88), rgba(200, 60, 30, 0.88));
+  background: radial-gradient(circle at 35% 35%, rgba(242, 116, 84, 0.75), rgba(200, 60, 30, 0.75));
   border-color: rgba(255, 180, 160, 0.6);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .action-b {
-  background: radial-gradient(circle at 35% 35%, rgba(50, 150, 200, 0.88), rgba(15, 75, 120, 0.88));
+  background: radial-gradient(circle at 35% 35%, rgba(50, 150, 200, 0.75), rgba(15, 75, 120, 0.75));
   border-color: rgba(160, 220, 255, 0.6);
 }
 
@@ -947,45 +974,45 @@ body.is-arena-fullscreen {
 .arena:fullscreen .touch-controls,
 .arena:-webkit-full-screen .touch-controls,
 .arena.is-fullscreen .touch-controls {
-  padding: 24px 32px;
+  padding: 14px 18px;
   z-index: 50;
 }
 
 @media (max-width: 650px) {
   .touch-controls {
-    padding: 10px 12px;
+    padding: 6px 8px;
   }
   .touch-dpad {
-    width: 116px;
-    height: 116px;
+    width: 104px;
+    height: 104px;
   }
   .dpad-cross {
-    width: 110px;
-    height: 110px;
+    width: 98px;
+    height: 98px;
   }
   .dpad-up, .dpad-down {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
   .dpad-left, .dpad-right {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
   .dpad-center {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
   .action-btn {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
   }
   .action-btn .btn-letter {
-    font-size: 17px;
+    font-size: 16px;
   }
   .action-btn .btn-sub {
-    font-size: 7px;
+    font-size: 6.5px;
   }
   .touch-actions {
-    gap: 12px;
+    gap: 8px;
   }
 }
