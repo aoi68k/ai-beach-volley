@@ -397,7 +397,7 @@ function reset() {
   players = INITIAL_PLAYER_X.map(createPlayer);
   serve(0);
   updateCamera(0, true);
-  setOverlay('LET’S RALLY.', 'キャラの操作担当を決めて、砂浜へ。', 'PLAYER SETUP ', true);
+  setOverlay('LET’S RALLY.', 'ペアを組んで、砂浜へ。', 'PLAYER SETUP ', true);
   status();
   syncModeButtons();
   syncCheckModeUI();
@@ -1932,7 +1932,7 @@ function finishPoint() {
     playSfx('win');
     setOverlay(
       side ? 'BLUE WINS!' : 'CORAL WINS!',
-      'ナイスゲーム！次の試合の担当を決めましょう。',
+      'ナイスゲーム！ペアを組んで、次の試合へ。',
       'PLAY AGAIN ',
       true
     );
@@ -4022,7 +4022,7 @@ window.rallyGame = {
     }
     serveState = serveTimer > 0 ? (s.serveState ?? null) : null;
     serveTurns = s.serveTurns ?? [0, 0];
-    if (winner) setOverlay(score[0] >= WINNING_SCORE ? 'CORAL WINS!' : 'BLUE WINS!', 'ロビーで次の試合の担当を決めましょう。', 'LOBBY ');
+    if (winner) setOverlay(score[0] >= WINNING_SCORE ? 'CORAL WINS!' : 'BLUE WINS!', 'ロビーで次の試合の準備をしましょう。', 'LOBBY ');
     else getArenaElement('#overlay')?.classList.toggle('hidden', running);
     status();
     updateFullscreenUI();
