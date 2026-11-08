@@ -19,7 +19,12 @@
   let hostWaiting = false, hostReconnectTimer = null, hostTimeoutTimer = null;
   const disconnectedSlots = new Set();
   const connections = new Map(), inputs = new Map();
-  const message = text => { $('lobby-message').textContent = text; };
+  const message = (text, type = 'info') => {
+    const el = $('lobby-message');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'lobby-message' + (type ? ` is-${type}` : '');
+  };
   function send(c, data) {
     if (!c?.open) return;
     try {
@@ -92,14 +97,22 @@
     $('local-mode').disabled = online || participant;
     $('host-room').disabled = online || participant;
     $('join-room').disabled = online;
+    $('join-room').textContent = (online && guest && !room) ? '接続中…' : '参加する';
     $('launch-match').disabled = participant || (online && !room) || playing;
     $('launch-match').textContent = guest ? 'ホストの開始を待っています' : 'この担当で試合開始 ↗';
-    $('lobby-help').textContent = online ? `${members.length} / 4人 接続中。ホストが操作担当を指定します。未割当の参加者は観戦できます。`
-      : participant ? '操作担当の設定と試合開始はホストが行います。' : '同じ操作担当は1キャラまで。空いたキャラはCOMにできます。';
-    if (online && room && members.length) {
-      $('lobby-help').textContent += owners.includes(self)
-        ? ' 金色の枠と「▼ あなた」が自分のキャラです。'
-        : ' 現在、あなたは観戦です。';
+    const helpEl = $('lobby-help');
+    if (helpEl) {
+      if (online && (!room || members.length === 0)) {
+        helpEl.textContent = '⏳ ホストの部屋に接続しています… 通信の確立をお待ちください。';
+        helpEl.className = 'lobby-help is-connecting';
+      } else if (online && room && members.length) {
+        helpEl.textContent = `${members.length} / 4人 接続中。ホストが操作担当を指定します。未割当の参加者は観戦できます。`
+          + (owners.includes(self) ? ' 金色の枠と「▼ あなた」が自分のキャラです。' : ' 現在、あなたは観戦です。');
+        helpEl.className = 'lobby-help is-connected';
+      } else {
+        helpEl.textContent = participant ? '操作担当の設定と試合開始はホストが行います。' : '同じ操作担当は1キャラまで。空いたキャラはCOMにできます。';
+        helpEl.className = 'lobby-help';
+      }
     }
   }
   function show() { if (!$('lobby').open) $('lobby').showModal(); render(); }
@@ -112,7 +125,7 @@
     online = false; guest = false; playing = false;
     const previous = peer; peer = null; previous?.destroy();
     connections.clear(); inputs.clear(); hostConnection = null; self = ''; room = ''; members = []; owners = [1, 0, 0, 0];
-    game.stop(); render(); if (note) { message(note); show(); }
+    game.stop(); render(); if (note) { message(note, 'error'); show(); }
   }
   function resumeFromHostWaiting() {
     if (!hostWaiting) return;
@@ -153,26 +166,52 @@
   function returnToLobby(note) {
     playing = false; inputs.clear(); game.stop(); sync(); show(); message(note);
   }
+  const ICE_CONFIG = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' }
+    ]
+  };
   function connect(target) {
-    if (typeof Peer === 'undefined') { message('通信ライブラリを読み込めませんでした。ページを再読み込みしてください。'); return; }
+    if (typeof Peer === 'undefined') { message('通信ライブラリを読み込めませんでした。ページを再読み込みしてください。', 'error'); return; }
     teardown(); online = true; guest = !!target; const generation = epoch;
-    message('部屋に接続しています…'); render();
-    peer = new Peer({ debug: 0 });
-    connectionTimer = setTimeout(() => { if (generation === epoch) teardown('接続がタイムアウトしました。コードと回線を確認し、もう一度お試しください。'); }, 20000);
+    message(guest ? 'ホストの部屋を探して接続しています…（数秒お待ちください）' : '部屋を作成しています…', 'connecting'); render();
+    peer = new Peer({ config: ICE_CONFIG, debug: 0 });
+    connectionTimer = setTimeout(() => {
+      if (generation === epoch) teardown('接続がタイムアウトしました。ホストが部屋を開いているか、部屋コードと回線をご確認ください。');
+    }, 20000);
     peer.on('open', id => {
       if (generation !== epoch) return;
       self = id;
-      if (guest) { hostConnection = peer.connect(target, { reliable: true, serialization: 'json' }); attach(hostConnection, generation); }
-      else {
+      if (guest) {
+        message('ホストの部屋を発見しました。通信を確立しています…', 'connecting');
+        hostConnection = peer.connect(target, { reliable: true, serialization: 'json' });
+        attach(hostConnection, generation);
+      } else {
         clearTimeout(connectionTimer); room = id; members = [{ id }]; owners = [id, 0, 0, 0];
-        $('invite-link').value = invite(id); message(`部屋コード: ${id} — 招待リンクを相手に送ってください。`); render();
+        $('invite-link').value = invite(id); message(`部屋コード: ${id} — 招待リンクを相手に送ってください。`, 'success'); render();
       }
     });
     peer.on('connection', c => {
       if (generation !== epoch || guest) { c.close(); return; }
       attach(c, generation);
     });
-    peer.on('error', error => { if (generation === epoch) teardown(`接続できませんでした（${error.type || '通信エラー'}）。コードとネットワークを確認してください。`); });
+    peer.on('error', error => {
+      if (generation !== epoch) return;
+      let reason = '通信エラーが発生しました。';
+      if (error.type === 'peer-unavailable') {
+        reason = '指定された部屋が見つかりませんでした。ホストが部屋を開いているか、部屋コードをご確認ください。';
+      } else if (error.type === 'network') {
+        reason = 'ネットワークエラーが発生しました。インターネット接続状況をご確認ください。';
+      } else if (error.type === 'server-error' || error.type === 'socket-error' || error.type === 'socket-closed') {
+        reason = '接続サーバーとの通信に失敗しました。少し待ってから再度お試しください。';
+      } else {
+        reason = `接続できませんでした（${error.type || '通信エラー'}）。コードと回線を確認してください。`;
+      }
+      teardown(reason);
+    });
     peer.on('disconnected', () => {
       if (generation !== epoch) return;
       if (peer && !peer.destroyed) {
@@ -231,7 +270,7 @@
           clearTimeout(connectionTimer); room = c.peer; members = data.members; owners = data.owners;
           const wasPlaying = playing; playing = data.playing;
           $('invite-link').value = invite(room);
-          if (!playing) { game.stop(); show(); message(wasPlaying ? '試合を終了しました。担当を確認してください。' : '接続しました。ホストが担当を決めて開始します。'); }
+          if (!playing) { game.stop(); show(); message(wasPlaying ? '試合を終了しました。担当を確認してください。' : '接続しました。ホストが担当を決めて開始します。', 'success'); }
           render();
         } else if (data.type === 'start') { playing = true; game.start(); $('lobby').close(); $('game').focus(); }
         else if (data.type === 'state' && playing) game.apply(data.state);

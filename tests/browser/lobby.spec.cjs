@@ -37,6 +37,11 @@ test('invitation view only permits joining and keeps setup under host control', 
   await page.locator('#lobby').screenshot({path:'test-results/invited-join.png'});
   await page.locator('#join-room').click();
   await page.waitForFunction(()=>!!window.testConnection);
+  await expect(page.locator('#lobby-message')).toHaveClass(/is-connecting/);
+  await expect(page.locator('#lobby-help')).toHaveClass(/is-connecting/);
+  await expect(page.locator('#lobby-help')).toContainText('ホストの部屋に接続しています');
+  await expect(page.locator('#join-room')).toHaveText('接続中…');
+  await page.locator('#lobby').screenshot({path:'test-results/invited-connecting.png'});
   await page.evaluate(()=>window.testConnection.emit('data',{
     type:'lobby',members:[{id:'test-host'},{id:'test-guest'}],owners:['test-host',0,'test-guest',0],playing:false
   }));
