@@ -75,7 +75,7 @@ function advanceFrames(remaining, dt) {
   return next < 1e-7 ? 0 : next;
 }
 const ATTACK_SPEED = 720;
-const QUICK_SPEED = 1250;
+const QUICK_SPEED = 1350;
 const QUICK_MAX_SPEED = 1450;
 const QUICK_DRIVE = 820;
 const ATTACK_CHARGE_BONUS = 0.5;

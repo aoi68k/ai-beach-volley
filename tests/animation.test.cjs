@@ -1277,18 +1277,18 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
 {
   run('mode=5;reset();running=true;serveTimer=0;');
   const rules = run('window.rallyGame.frameRules()');
-  assert.equal(rules.speeds.quick, 1250);
+  assert.equal(rules.speeds.quick, 1350);
   assert.equal(rules.speeds.quickMax, 1450);
   assert.equal(rules.speeds.quickDrive, 820);
 
   // Before net: quick attack accelerates normally by gravity (GRAVITY = 650)
-  run('ball.quickAttack=true;ball.x=NET-100;ball.vx=1250;ball.vy=0;');
+  run('ball.quickAttack=true;ball.x=NET-100;ball.vx=1350;ball.vy=0;');
   run('updateBall(1/60);');
   const vyBeforeNet = run('ball.vy');
   assert(Math.abs(vyBeforeNet - 650 / 60) < 0.1, `Before net, vy should only have gravity: got ${vyBeforeNet}`);
 
   // After crossing net: quick attack gets QUICK_DRIVE (820) added
-  run('ball.quickAttack=true;ball.x=NET+50;ball.vx=1250;ball.vy=0;');
+  run('ball.quickAttack=true;ball.x=NET+50;ball.vx=1350;ball.vy=0;');
   run('updateBall(1/60);');
   const vyAfterNet = run('ball.vy');
   assert(Math.abs(vyAfterNet - (650 + 820) / 60) < 0.1, `After net, vy should include drive 820: got ${vyAfterNet}`);
