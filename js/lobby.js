@@ -220,7 +220,7 @@
       teardown('接続サービスとの通信が切れました。部屋を作り直してください。');
     });
   }
-  function invite(id) { const url = new URL(location.href); url.hash = ''; url.searchParams.set('room', id); return url.href; }
+  function invite(id) { const url = new URL('invite.html', location.href); url.hash = ''; url.searchParams.set('room', id); return url.href; }
   function attach(c, generation) {
     c.on('open', () => {
       if (generation !== epoch) { c.close(); return; }
@@ -396,5 +396,22 @@
     playing = true; game.start(); $('lobby').close(); $('game').focus(); if (online) { sync(); broadcast({ type: 'start' }); }
   };
   render();
-  if (invited) { $('room-code').value = invited; show(); message('招待された部屋です。「参加する」を押してください。'); $('join-room').focus(); }
+  if (invited) {
+    try {
+      const inviteDesc = 'ビーチバレーゲーム、オンラインプレイ招待URL';
+      const ogDesc = document.querySelector('meta[property="og:description"]');
+      if (ogDesc) ogDesc.setAttribute('content', inviteDesc);
+      const twDesc = document.querySelector('meta[name="twitter:description"]');
+      if (twDesc) twDesc.setAttribute('content', inviteDesc);
+      const inviteImg = new URL('assets/ogp-invite.png', location.href).href;
+      const ogImg = document.querySelector('meta[property="og:image"]');
+      if (ogImg) ogImg.setAttribute('content', inviteImg);
+      const twImg = document.querySelector('meta[name="twitter:image"]');
+      if (twImg) twImg.setAttribute('content', inviteImg);
+    } catch (_) {}
+    $('room-code').value = invited;
+    show();
+    message('招待された部屋です。「参加する」を押してください。');
+    $('join-room').focus();
+  }
 })();

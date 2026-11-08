@@ -137,6 +137,28 @@ test('head includes OGP and Twitter Card meta tags for rich link sharing', async
   await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', 'https://aoi68k.github.io/ai-beach-volley/assets/ogp.png');
 });
 
+test('invite page includes dedicated invite OGP tags and redirects to game room', async ({ page }) => {
+  // 1. Static OGP / Twitter card verification on invite.html
+  const response = await page.request.get('/invite.html?room=test-room-uuid');
+  const html = await response.text();
+  expect(html).toContain('property="og:description" content="ビーチバレーゲーム、オンラインプレイ招待URL"');
+  expect(html).toContain('name="twitter:description" content="ビーチバレーゲーム、オンラインプレイ招待URL"');
+  expect(html).toContain('property="og:image" content="https://aoi68k.github.io/ai-beach-volley/assets/ogp-invite.png"');
+  expect(html).toContain('property="og:image:width" content="1200"');
+  expect(html).toContain('property="og:image:height" content="386"');
+
+  // 2. Browser navigation to invite.html seamlessly redirects to main room
+  await page.goto('/invite.html?room=test-room-uuid');
+  await expect(page).toHaveURL(/\/\?room=test-room-uuid$/);
+  await expect(page.locator('#lobby')).toHaveAttribute('open', '');
+  await expect(page.locator('#room-code')).toHaveValue('test-room-uuid');
+  await expect(page.locator('#lobby-message')).toContainText('招待された部屋です');
+
+  // 3. Dynamic metadata updated on main document when invited
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute('content', 'ビーチバレーゲーム、オンラインプレイ招待URL');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /assets\/ogp-invite\.png$/);
+});
+
 test('player setup highlights local 1P and blue portraits face left', async ({page})=>{
   await page.goto('/');await page.locator('#start').click();
   await expect(page.locator('#player-slots .is-you strong')).toHaveText('コーラル / 男性');

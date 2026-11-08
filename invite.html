@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SUNSET RALLY — Beach Volleyball</title>
+  <meta name="description" content="ビーチバレーゲーム、オンラインプレイ招待URL">
+
+  <!-- Open Graph / Facebook / Discord -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://aoi68k.github.io/ai-beach-volley/invite.html">
+  <meta property="og:title" content="SUNSET RALLY — Beach Volleyball">
+  <meta property="og:description" content="ビーチバレーゲーム、オンラインプレイ招待URL">
+  <meta property="og:image" content="https://aoi68k.github.io/ai-beach-volley/assets/ogp-invite.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="386">
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://aoi68k.github.io/ai-beach-volley/invite.html">
+  <meta name="twitter:title" content="SUNSET RALLY — Beach Volleyball">
+  <meta name="twitter:description" content="ビーチバレーゲーム、オンラインプレイ招待URL">
+  <meta name="twitter:image" content="https://aoi68k.github.io/ai-beach-volley/assets/ogp-invite.png">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #0c1d28;
+      color: #f0f7fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: #ff9e43;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0 0 16px;
+      color: #ffffff;
+    }
+    p {
+      color: #9cb3c9;
+      font-size: 0.95rem;
+      margin: 0 0 20px;
+    }
+    a {
+      display: inline-block;
+      background: #2ba2e3;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.15s;
+    }
+    a:hover {
+      background: #38b4f7;
+    }
+  </style>
+
+  <script>
+    (function() {
+      var params = new URLSearchParams(location.search);
+      var room = params.get('room');
+      var target = './' + (room ? ('?room=' + encodeURIComponent(room)) : '');
+      location.replace(target);
+    })();
+  </script>
+</head>
+<body>
+  <div class="brand">SUNSET RALLY</div>
+  <h1>ルームへ接続しています…</h1>
+  <p>自動でページが切り替わらない場合は、下のボタンを押してください。</p>
+  <noscript>
+    <a href="./">SUNSET RALLY を開く</a>
+  </noscript>
+  <script>
+    // JSが有効だが location.replace が何らかの理由でブロックされた場合のフォールバックリンク
+    document.write('<a href="' + (new URLSearchParams(location.search).get('room') ? ('./?room=' + encodeURIComponent(new URLSearchParams(location.search).get('room'))) : './') + '">ゲームへ進む</a>');
+  </script>
+</body>
+</html>
