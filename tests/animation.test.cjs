@@ -1026,6 +1026,17 @@ run('keys.add("KeyZ");update(1/60);keys.clear();');
 assert.equal(run('serveState'),null);
 assert.equal(run('ball.lastHitter===players[0]'),true);
 assert.equal(run('players[0].airborneTouch'),true);
+// Holding A continuously through toss and jump also strikes the ball once airborne in contact range.
+run('mode=5;reset();running=true;beginServe(0);keys.add("KeyZ");update(1/60);');
+assert.equal(run('serveState.phase'),'tossed');
+run('keys.add("ArrowUp");');
+for (let i = 0; i < 45 && run('serveState !== null'); i++) {
+  run('update(1/60);');
+}
+assert.equal(run('serveState'), null, 'Serve must be struck while holding A');
+assert.equal(run('ball.lastHitter === players[0]'), true);
+assert.equal(run('players[0].airborneTouch'), true);
+run('keys.clear();');
 // Missed tosses return to the same server without scoring or automatic strikes.
 run('mode=5;reset();running=true;beginServe(0);keys.add("KeyZ");update(1/60);keys.clear();');
 run('for(let i=0;i<150&&serveState.phase!=="holding";i++)update(1/60);');

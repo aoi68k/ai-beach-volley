@@ -1118,7 +1118,8 @@ function updateServe(dt, pads) {
     return;
   }
   updateActivePlayer(p, dt, pads, input);
-  if (shotPressed && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0 && inRange) {
+  const canStrikeJumpServe = input.shot && state.age >= 0.1 && p.y < FLOOR && p.recoveryFrames <= 0 && p.cooldownFrames <= 0 && inRange;
+  if (canStrikeJumpServe) {
     const aim = p.human ? input : { down: state.comAim === 'power', jump: state.comAim === 'high',
       move: state.comAim === 'fast' ? direction : state.comAim === 'slow' ? -direction : 0 };
     strikeServe(p, true, aim);

@@ -299,6 +299,19 @@ test('human serves: hold, toss, timed jump attack and standing B serve', async (
   expect(await page.evaluate(() => window.rallyGame.snapshot().players[0].y)).toBe(530);
   expect(await page.evaluate(() => window.rallyGame.snapshot().ball.lastShot)).toBe('attack');
   await page.locator('#game').screenshot({ path: 'test-results/serve-standing.png' });
+
+  // Continuous hold A: toss, jump while holding A, strikes seamlessly upon contact
+  await start();
+  await page.keyboard.down('KeyZ');
+  await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().serveState?.phase)).toBe('tossed');
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down('ArrowUp');
+  await expect.poll(() => page.evaluate(() => window.rallyGame.snapshot().serveState), { timeout: 3000 }).toBeNull();
+  expect(await page.evaluate(() => window.rallyGame.snapshot().players[0].airborneTouch)).toBe(true);
+  await page.keyboard.up('KeyZ');
+  await page.keyboard.up('ArrowUp');
+  await page.keyboard.up('ArrowRight');
+
   await page.goto('/character-preview.html');
   await expect(page.locator('#load-status')).toContainText('サーブ2状態');
   expect(errors).toEqual([]);
