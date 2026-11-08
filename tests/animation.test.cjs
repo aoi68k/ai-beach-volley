@@ -1294,4 +1294,21 @@ for(const side of [0,1])for(const action of ['receive','set','attack','block']) 
   assert(Math.abs(vyAfterNet - (650 + 820) / 60) < 0.1, `After net, vy should include drive 820: got ${vyAfterNet}`);
 }
 
+// Net collision audio suppression when vertical vector is minimal (ball resting/rolling on net)
+{
+  run('mode=5;reset();running=true;serveTimer=0;audioEvents=[];');
+  // 1. High-speed downward impact on net top: triggers 'net' SFX
+  run('ball.x=NET;ball.y=NETTOP-ball.r-1;ball.vx=0;ball.vy=200;');
+  run('updateBall(1/60);');
+  const eventsImpact = run('audioEvents.map(e => e.name)');
+  assert(eventsImpact.includes('net'), `High vertical velocity onto net should trigger net SFX, got: ${JSON.stringify(eventsImpact)}`);
+
+  // 2. Minimal vertical vector (ball resting/rolling on top of net, vy < 75): should NOT trigger 'net' SFX
+  run('audioEvents=[];');
+  run('ball.x=NET;ball.y=NETTOP-ball.r-0.1;ball.vx=10;ball.vy=15;');
+  run('updateBall(1/60);');
+  const eventsResting = run('audioEvents.map(e => e.name)');
+  assert(!eventsResting.includes('net'), `Resting/rolling ball on net with minimal vertical vector should NOT trigger net SFX, got: ${JSON.stringify(eventsResting)}`);
+}
+
 console.log('PASS: animation, directional/power serves, reception knockback, COM tactics, charge, landing recovery, specials, audio and physics.');

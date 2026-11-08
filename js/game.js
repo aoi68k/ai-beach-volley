@@ -2279,10 +2279,16 @@ function updateBall(dt) {
   }
 
   if (Math.abs(ball.x - NET) < NET_HALF_WIDTH && ball.y + ball.r > NETTOP) {
-    playSfx('net');
-    if (oldY + ball.r <= NETTOP && ball.vy > 0) {
+    const isLandingOnNet = oldY + ball.r <= NETTOP && ball.vy > 0;
+    // 上下のベクトルがほとんど無い（ネット上に乗って転がっている・小刻みに跳ねている）時はSEを鳴らさない
+    const hasImpactVelocity = isLandingOnNet ? ball.vy >= 75 : Math.abs(ball.vx) >= 60;
+    if (hasImpactVelocity) {
+      playSfx('net');
+    }
+    if (isLandingOnNet) {
       ball.y = NETTOP - ball.r;
       ball.vy = -Math.abs(ball.vy) * 0.65;
+      if (Math.abs(ball.vy) < 20) ball.vy = 0;
     } else {
       ball.x = oldX < NET ? NET - 19 : NET + 19;
       ball.vx = (oldX < NET ? -1 : 1) * Math.max(80, Math.abs(ball.vx) * 0.65);
