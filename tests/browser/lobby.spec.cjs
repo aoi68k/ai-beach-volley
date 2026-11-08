@@ -145,7 +145,7 @@ test('invite page includes dedicated invite OGP tags and redirects to game room'
   expect(html).toContain('name="twitter:description" content="ビーチバレーゲーム、オンラインプレイ招待URL"');
   expect(html).toContain('property="og:image" content="https://aoi68k.github.io/ai-beach-volley/assets/ogp-invite.png"');
   expect(html).toContain('property="og:image:width" content="1200"');
-  expect(html).toContain('property="og:image:height" content="386"');
+  expect(html).toContain('property="og:image:height" content="248"');
 
   // 2. Browser navigation to invite.html seamlessly redirects to main room
   await page.goto('/invite.html?room=test-room-uuid');

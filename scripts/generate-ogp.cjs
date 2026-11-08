@@ -50,9 +50,15 @@ async function generateOgp() {
   await page.screenshot({ path: outPath, type: 'png' });
   console.log(`Saved OGP image to ${outPath}`);
 
-  // 2. Invite OGP (1200x386, lower half with all 4 characters focused)
+  // 2. Invite OGP (1200x248, user-supplied cropped banner with 4 characters focused)
   const inviteW = 1200;
-  const inviteH = 386;
+  const inviteH = 248;
+  const bannerPath = path.resolve(__dirname, '../assets/invite-banner.jpg');
+  const bannerBase64 = fs.existsSync(bannerPath)
+    ? fs.readFileSync(bannerPath).toString('base64')
+    : null;
+  const bannerDataUri = bannerBase64 ? `data:image/jpeg;base64,${bannerBase64}` : dataUri;
+
   const invitePage = await context.newPage();
   await invitePage.setViewportSize({ width: inviteW, height: inviteH });
   await invitePage.setContent(`
@@ -81,12 +87,11 @@ async function generateOgp() {
           const ctx = canvas.getContext('2d');
           const img = new Image();
           img.onload = () => {
-            ctx.imageSmoothingEnabled = false;
-            // Crop lower half: sy=230, sh=378 from 1174x608 original
-            ctx.drawImage(img, 0, 230, 1174, 378, 0, 0, ${inviteW}, ${inviteH});
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, ${inviteW}, ${inviteH});
             window.__rendered = true;
           };
-          img.src = '${dataUri}';
+          img.src = '${bannerDataUri}';
         </script>
       </body>
     </html>
