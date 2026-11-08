@@ -198,7 +198,8 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(row('パワーアタック（1sp）')).toContainText('空中 強：初速1800／理論450px');
   await expect(row('アタック')).toContainText('横速度上限 720 → 1080');
   await expect(row('ディープアタック')).toContainText('横速度上限 720 → 1080');
-  await expect(row('クイック')).toContainText('横速度上限 1177 → 1350');
+  await expect(row('クイック')).toContainText('横速度上限 1250 → 1450');
+  await expect(row('クイック')).toContainText('820');
   await expect(row('トス')).toContainText('上向き 410');
   await expect(row('ハイセット')).toContainText('上向き 520');
   await expect(row('フェイント')).toContainText('ブロック無効');

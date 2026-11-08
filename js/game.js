@@ -75,7 +75,9 @@ function advanceFrames(remaining, dt) {
   return next < 1e-7 ? 0 : next;
 }
 const ATTACK_SPEED = 720;
-const QUICK_SPEED = 1177;
+const QUICK_SPEED = 1250;
+const QUICK_MAX_SPEED = 1450;
+const QUICK_DRIVE = 820;
 const ATTACK_CHARGE_BONUS = 0.5;
 const KNOCKBACK_RULES = Object.freeze({ weak: 900, double: 1300, powerServe: 1300, decay: 4 });
 const TOSS_SPEEDS = Object.freeze({ normal: 410, high: 520, powerReceive: 500 });
@@ -1519,7 +1521,7 @@ function hit(p, set, forcedType, forward = false, back = false, down = false, up
   if (air) {
     const charge = p.y < FLOOR ? Math.max(0, Math.min(1, (p.attackChargeFrames ?? 0) / FRAME_RULES.attackCharge)) : 0;
     const baseSpeed = quick ? QUICK_SPEED : special === 'empowered' ? ATTACK_SPEED * SPECIAL_RULES.empoweredSpeed : ATTACK_SPEED;
-    const maxChargeSpeed = (quick || special === 'empowered') ? 1350 : baseSpeed * (1 + ATTACK_CHARGE_BONUS);
+    const maxChargeSpeed = quick ? QUICK_MAX_SPEED : special === 'empowered' ? 1350 : baseSpeed * (1 + ATTACK_CHARGE_BONUS);
     const speedLimit = baseSpeed + charge * (maxChargeSpeed - baseSpeed);
     const attack = attackVelocity(ball, p.side, speedLimit, forward && p.y < FLOOR && !special);
     if (attack) {
@@ -2214,7 +2216,9 @@ function updateBallSpin(dt) {
     ? 2.4
     : (ball.lastShot === 'loop' && (ball.loopDrive ?? 0) > 0)
       ? 2.6
-      : 1;
+      : (ball.quickAttack && (ball.x - NET) * ball.vx > 0)
+        ? 2.4
+        : 1;
   const angularSpeed = (speed / ball.r * 0.18) * spinBoost;
   const turn = Math.PI * 2;
   ball.rotation = ((ball.rotation ?? 0) + angularSpeed * (ball.spinDirection || 1) * dt) % turn;
@@ -2243,6 +2247,7 @@ function updateBall(dt) {
   } else {
     ball.vy += GRAVITY * dt;
     if (ball.serveVariant === 'high' && (ball.x - NET) * ball.vx > 0) ball.vy += 220 * dt;
+    if (ball.quickAttack && (ball.x - NET) * ball.vx > 0) ball.vy += QUICK_DRIVE * dt;
     if (ball.lastShot === 'feint' && (ball.x - (NET + Math.sign(ball.vx) * NET_CLEAR_OFFSET)) * ball.vx > 0) {
       ball.feintDrive = (ball.feintDrive || 0) + 3600 * dt;
       ball.vy += (650 + ball.feintDrive) * dt;
@@ -3935,7 +3940,7 @@ window.rallyGame = {
     return { fps: GAME_FPS, rules: FRAME_RULES, recovery: ACTION_RECOVERY_FRAMES,
       speeds: { attack: ATTACK_SPEED, quick: QUICK_SPEED, chargeMultiplier: 1 + ATTACK_CHARGE_BONUS,
         empoweredMultiplier: SPECIAL_RULES.empoweredSpeed, toss: TOSS_SPEEDS.normal,
-        highToss: TOSS_SPEEDS.high, powerReceive: TOSS_SPEEDS.powerReceive, mozuDive: SPECIAL_RULES.mozuDiveSpeed, referenceServes, quickMax: 1350, empoweredMax: 1350 },
+        highToss: TOSS_SPEEDS.high, powerReceive: TOSS_SPEEDS.powerReceive, mozuDive: SPECIAL_RULES.mozuDiveSpeed, referenceServes, quickMax: QUICK_MAX_SPEED, quickDrive: QUICK_DRIVE, empoweredMax: 1350 },
       knockback: { ...KNOCKBACK_RULES, empowered: SPECIAL_RULES.knockback, empoweredGround: SPECIAL_RULES.knockbackGround, impactRecovery: SPECIAL_RULES.impactRecovery } };
   },
   start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); getArenaElement('#overlay')?.classList.add('hidden'); updateFullscreenUI(); },
