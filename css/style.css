@@ -978,8 +978,8 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
 .player-card .player-owner { margin: 0; padding: 9px 5px; min-height: 42px; font-size: 12px; line-height: 1.8; text-align: center; overflow-wrap: anywhere; border-radius: 4px; background: #102f430a; }
 .player-card.is-you .player-owner { font-weight: 700; color: var(--navy); background: #ffe6a2; }
 .team-blue { border-top-color: var(--blue); background: linear-gradient(180deg, #e2f4f8, #fffdf7 80%); }
-.character-portrait { width: 100px; max-width: 100%; height: 100px; background-size: 600px 200px; background-position: 0 0; background-repeat: no-repeat; align-self: center; margin: 10px 0; }
-.character-portrait.is-avatar-portrait { background-size: 165% !important; background-position: center 53% !important; background-repeat: no-repeat !important; }
+.character-portrait { width: 140px; max-width: 100%; height: 140px; background-size: 840px 280px; background-position: 0 0; background-repeat: no-repeat; align-self: center; margin: 4px 0; }
+.character-portrait.is-avatar-portrait { background-size: 155% !important; background-position: center 48% !important; background-repeat: no-repeat !important; }
 .team-blue .character-portrait { transform: scaleX(-1); }
 .avatar-toggle-btn { display: flex; align-items: center; justify-content: center; gap: 4px; margin-bottom: 8px; padding: 5px 8px; font-size: 11px; font-weight: 600; color: var(--navy); background: #ffffffaa; border: 1px solid #16465a33; border-radius: 4px; cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .avatar-toggle-btn:hover:not(:disabled) { background: #ffffff; border-color: var(--navy); }
