@@ -875,12 +875,93 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
   0%, 100% { opacity: 0.8; }
   50% { opacity: 1; }
 }
-.player-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.player-card { display: flex; flex-direction: column; align-items: stretch; min-width: 0; border: 1px solid #16465a26; border-top: 3px solid var(--coral); border-radius: 6px; padding: 12px; background: linear-gradient(180deg, #fff0e6, #fffdf7 80%); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.player-slots {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+.team-side-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  border-radius: 6px;
+  padding: 10px 4px;
+  box-sizing: border-box;
+  user-select: none;
+  box-shadow: 0 2px 5px rgba(16, 47, 67, 0.12);
+}
+.team-coral-banner {
+  background: linear-gradient(180deg, #f08359, #cf552c);
+  border: 1px solid #b3421d;
+  color: #ffffff;
+}
+.team-blue-banner {
+  background: linear-gradient(180deg, #328ca8, #1c617b);
+  border: 1px solid #144f65;
+  color: #ffffff;
+}
+.team-banner-label {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.team-cards-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.slots-vs-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 28px;
+  min-width: 28px;
+  user-select: none;
+}
+.slots-vs-divider .vs-line {
+  flex: 1;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, #16465a38 30%, #16465a38 70%, transparent);
+}
+.slots-vs-divider .vs-badge {
+  font-size: 13px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.05em;
+  color: #ffe6a2;
+  background: var(--navy);
+  padding: 4px 6px;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(16, 47, 67, 0.25);
+  border: 1px solid #0d2535;
+}
+.player-card { display: flex; flex-direction: column; align-items: stretch; min-width: 0; border: 1px solid #16465a26; border-top: 3px solid var(--coral); border-radius: 6px; padding: 10px; background: linear-gradient(180deg, #fff0e6, #fffdf7 80%); }
 .player-card select { min-width: 0; width: 100%; }
 .player-card > strong { font-size: 13px; line-height: 1.8; }
 .player-card.is-you { border-color: #c6901e; box-shadow: 0 0 0 3px #ffc83d50; background: linear-gradient(180deg, #fff0b7, #fffdf7 85%); }
-.player-you-marker { min-height: 24px; margin-top: 8px; text-align: center; font-size: 11px; font-weight: 700; line-height: 24px; }
+.player-you-marker { min-height: 22px; margin-bottom: 6px; text-align: center; font-size: 11px; font-weight: 700; line-height: 22px; }
 .is-you .player-you-marker { color: #ffe38c; background: var(--navy); border-radius: 4px; }
 .player-card .player-owner { margin: 0; padding: 9px 5px; min-height: 42px; font-size: 12px; line-height: 1.8; text-align: center; overflow-wrap: anywhere; border-radius: 4px; background: #102f430a; }
 .player-card.is-you .player-owner { font-weight: 700; color: var(--navy); background: #ffe6a2; }
@@ -901,9 +982,40 @@ dialog small { display: block; font-size: 11px; line-height: 1.9; }
 @media (max-width: 650px) {
   dialog { padding: 18px; }
   .lobby-heading { margin: -18px -18px 16px; padding: 18px; }
-  .player-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .player-slots {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .team-coral-banner { order: 1; width: 100%; min-width: 0; padding: 5px 12px; height: auto; }
+  .coral-cards-group { order: 2; gap: 8px; }
+  .slots-vs-divider {
+    order: 3;
+    flex-direction: row;
+    width: 100%;
+    min-width: 0;
+    height: 20px;
+    gap: 10px;
+    margin: 2px 0;
+  }
+  .slots-vs-divider .vs-line {
+    flex: 1;
+    height: 2px;
+    width: auto;
+    background: linear-gradient(90deg, transparent, #16465a38 30%, #16465a38 70%, transparent);
+  }
+  .slots-vs-divider .vs-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+  .team-blue-banner { order: 4; width: 100%; min-width: 0; padding: 5px 12px; height: auto; }
+  .blue-cards-group { order: 5; gap: 8px; }
+  .team-banner-label {
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+  }
   .player-card { padding: 8px; }
-  .player-card strong { font-size: 11px; }
   .player-card select { padding: 8px 4px; font-size: 12px; }
   input { width: 100% !important; }
   .header-right { flex-direction: column; align-items: flex-end; gap: 4px; }

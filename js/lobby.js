@@ -71,12 +71,36 @@
     $('player-slots').replaceChildren();
     const choices = online ? members.map((m, i) => [m.id, `${i + 1}P${m.id === self ? '（あなた）' : ''}${i === 0 ? ' / ホスト' : ''}`]) : [1, 2, 3, 4].map(n => [n, `${n}P / この端末`]);
     const pendingAssignment = participant && !(online && room && members.length);
+
+    const coralBanner = document.createElement('div');
+    coralBanner.className = 'team-side-banner team-coral-banner';
+    coralBanner.setAttribute('aria-hidden', 'true');
+    coralBanner.innerHTML = '<span class="team-banner-label">コーラルチーム</span>';
+
+    const coralCards = document.createElement('div');
+    coralCards.className = 'team-cards-group coral-cards-group';
+
+    const vsDivider = document.createElement('div');
+    vsDivider.className = 'slots-vs-divider';
+    vsDivider.setAttribute('aria-hidden', 'true');
+    vsDivider.innerHTML = '<div class="vs-line"></div><span class="vs-badge">VS</span><div class="vs-line"></div>';
+
+    const blueCards = document.createElement('div');
+    blueCards.className = 'team-cards-group blue-cards-group';
+
+    const blueBanner = document.createElement('div');
+    blueBanner.className = 'team-side-banner team-blue-banner';
+    blueBanner.setAttribute('aria-hidden', 'true');
+    blueBanner.innerHTML = '<span class="team-banner-label">ブルーチーム</span>';
+
     names.forEach((name, index) => {
       const mine = online ? !!self && owners[index] === self : !participant && owners[index] === 1;
       const card = document.createElement(participant ? 'article' : 'label');
       card.className = `player-card team-${index < 2 ? 'coral' : 'blue'}${mine ? ' is-you' : ''}`;
       card.setAttribute('aria-label', `${name}${mine ? '、あなたの担当' : ''}`);
-      const title = document.createElement('strong'); title.textContent = name;
+      const title = document.createElement('strong');
+      title.className = 'sr-only';
+      title.textContent = name;
       const marker = document.createElement('span'); marker.className = 'player-you-marker';
       marker.textContent = mine ? '▼ あなた' : '';
       marker.setAttribute('aria-hidden', String(!mine));
@@ -99,7 +123,7 @@
         owner.textContent = pendingAssignment ? '参加後にホストが指定'
           : !owners[index] ? 'COM' : choices.find(([value]) => value === owners[index])?.[1] ?? '未割当';
         card.append(owner);
-        $('player-slots').append(card);
+        if (index < 2) coralCards.append(card); else blueCards.append(card);
         return;
       }
 
@@ -135,8 +159,10 @@
         owners = owners.map((v, i) => i === index ? value : (value && v === value ? 0 : v));
         if (online) sync(); else render();
       };
-      card.append(select); $('player-slots').append(card);
+      card.append(select);
+      if (index < 2) coralCards.append(card); else blueCards.append(card);
     });
+    $('player-slots').append(coralBanner, coralCards, vsDivider, blueCards, blueBanner);
     $('local-mode').disabled = online || participant;
     $('host-room').disabled = online || participant;
     $('join-room').disabled = online;
