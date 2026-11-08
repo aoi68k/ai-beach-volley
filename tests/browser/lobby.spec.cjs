@@ -1373,6 +1373,39 @@ test('touch controls appear on touch devices with D-Pad and A/B buttons, and rou
   await expect(btnA).toBeVisible();
   await expect(btnB).toBeVisible();
 
+  // Test Pad Toggle Checkbox in upper-left corner
+  const toggleCheckbox = page.locator('#toggle-touch-pad');
+  const toggleLabel = page.locator('.touch-toggle-label');
+  await expect(toggleCheckbox).toBeVisible();
+  await expect(toggleCheckbox).toBeChecked();
+  await expect(toggleLabel).toContainText('パッド表示');
+
+  // Verify checkbox position is in top-left
+  const toggleBox = await toggleLabel.boundingBox();
+  const arenaBox = await page.locator('#arena-stage').boundingBox();
+  expect(toggleBox).toBeTruthy();
+  expect(arenaBox).toBeTruthy();
+  expect(toggleBox.x).toBeLessThan(arenaBox.x + arenaBox.width * 0.3);
+  expect(toggleBox.y).toBeLessThan(arenaBox.y + arenaBox.height * 0.3);
+
+  // Uncheck the toggle to hide pad
+  await toggleCheckbox.setChecked(false);
+  await expect(controls).toHaveClass(/is-pad-hidden/);
+  await expect(dpad).toBeHidden();
+  await expect(btnA).toBeHidden();
+  await expect(btnB).toBeHidden();
+  // Checkbox itself must remain visible!
+  await expect(toggleCheckbox).toBeVisible();
+  expect(await page.evaluate(() => window.touchControls.read(1))).toBeNull();
+  await page.screenshot({ path: 'test-results/touch-controls-hidden.png' });
+
+  // Re-check the toggle to restore pad
+  await toggleCheckbox.setChecked(true);
+  await expect(controls).not.toHaveClass(/is-pad-hidden/);
+  await expect(dpad).toBeVisible();
+  await expect(btnA).toBeVisible();
+  await expect(btnB).toBeVisible();
+
   // Test Button A (SHOT) touch
   await btnA.dispatchEvent('touchstart', {
     changedTouches: [{ identifier: 10, clientX: 300, clientY: 700 }]

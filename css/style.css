@@ -886,6 +886,69 @@ body.is-arena-fullscreen {
   display: none !important;
 }
 
+/* Touch Pad Toggle Checkbox (Upper Left) */
+.touch-toggle {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  pointer-events: auto;
+  touch-action: manipulation;
+  z-index: 35;
+}
+
+.touch-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 9px;
+  background: rgba(10, 32, 48, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 18px;
+  color: #d8f2fb;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.touch-toggle-label:hover {
+  background: rgba(16, 48, 70, 0.88);
+  border-color: rgba(94, 219, 247, 0.6);
+  color: #fff;
+}
+
+.touch-toggle-label input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: #5edbf7;
+  cursor: pointer;
+}
+
+.touch-controls.is-pad-hidden .touch-dpad,
+.touch-controls.is-pad-hidden .touch-actions {
+  display: none !important;
+}
+
+.touch-controls.is-pad-hidden .touch-toggle-label {
+  opacity: 0.65;
+  background: rgba(10, 32, 48, 0.48);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.touch-controls.is-pad-hidden .touch-toggle-label:hover {
+  opacity: 1;
+}
+
 /* D-Pad Container */
 .touch-dpad {
   position: relative;
@@ -1064,6 +1127,19 @@ body.is-arena-fullscreen {
 @media (max-width: 650px) {
   .touch-controls {
     padding: 6px 8px;
+  }
+  .touch-toggle {
+    top: 6px;
+    left: 8px;
+  }
+  .touch-toggle-label {
+    padding: 3px 8px;
+    font-size: 10px;
+    gap: 5px;
+  }
+  .touch-toggle-label input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
   }
   .touch-dpad {
     width: 104px;

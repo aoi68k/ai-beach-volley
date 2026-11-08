@@ -79,6 +79,12 @@
       <div class="arena-stage" id="arena-stage">
         <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
         <div id="touch-controls" class="touch-controls" aria-label="オンスクリーンコントローラー" hidden>
+          <div class="touch-toggle" id="touch-toggle">
+            <label class="touch-toggle-label" for="toggle-touch-pad">
+              <input type="checkbox" id="toggle-touch-pad" checked>
+              <span class="touch-toggle-text">パッド表示</span>
+            </label>
+          </div>
           <div class="touch-dpad" id="touch-dpad" aria-label="十字キー">
             <div class="dpad-cross">
               <button type="button" class="dpad-btn dpad-up" data-dir="up" aria-label="上 (ジャンプ)">▲</button>

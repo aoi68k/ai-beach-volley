@@ -5,6 +5,9 @@
   let initialized = false;
   let isTouch = false;
   let forcedVisible = false;
+  let padEnabled = true;
+
+  const STORAGE_KEY = 'sr_touch_pad_enabled';
 
   const state = {
     left: false,
@@ -21,6 +24,7 @@
 
   let dpadEl = null;
   let containerEl = null;
+  let toggleCheckbox = null;
   let btnUp = null;
   let btnDown = null;
   let btnLeft = null;
@@ -43,9 +47,36 @@
     if (shouldShow) {
       containerEl.removeAttribute('hidden');
       document.body?.classList?.add('has-touch-controls');
+      applyPadEnabledVisuals();
     } else {
       containerEl.setAttribute('hidden', '');
       document.body?.classList?.remove('has-touch-controls');
+    }
+  }
+
+  function applyPadEnabledVisuals() {
+    if (!containerEl) return;
+    containerEl.classList.toggle('is-pad-hidden', !padEnabled);
+    if (toggleCheckbox && toggleCheckbox.checked !== padEnabled) {
+      toggleCheckbox.checked = padEnabled;
+    }
+  }
+
+  function setPadEnabled(val, persist = true) {
+    padEnabled = Boolean(val);
+    applyPadEnabledVisuals();
+    if (!padEnabled) {
+      resetDpad();
+      shotTouchId = null;
+      setTouchId = null;
+      state.shot = false;
+      state.set = false;
+      updateActionVisuals();
+    }
+    if (persist) {
+      try {
+        localStorage.setItem(STORAGE_KEY, padEnabled ? '1' : '0');
+      } catch (_) {}
     }
   }
 
@@ -284,6 +315,21 @@
     btnRight = containerEl.querySelector('.dpad-right');
     btnA = containerEl.querySelector('.action-a');
     btnB = containerEl.querySelector('.action-b');
+    toggleCheckbox = containerEl.querySelector('#toggle-touch-pad');
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
+        padEnabled = saved !== '0';
+      }
+    } catch (_) {}
+
+    if (toggleCheckbox) {
+      toggleCheckbox.checked = padEnabled;
+      toggleCheckbox.addEventListener('change', () => {
+        setPadEnabled(toggleCheckbox.checked, true);
+      });
+    }
 
     // First detect touch
     isTouch = detectTouchDevice();
@@ -308,7 +354,7 @@
   window.touchControls = {
     init,
     read(controller = 1) {
-      if (controller !== 1) return null;
+      if (controller !== 1 || !padEnabled) return null;
       const move = (state.right ? 1 : 0) - (state.left ? 1 : 0);
       return {
         move,
@@ -325,6 +371,12 @@
     },
     isVisible() {
       return !containerEl?.hasAttribute('hidden') && (forcedVisible || isTouch);
+    },
+    isPadEnabled() {
+      return padEnabled;
+    },
+    setPadEnabled(val) {
+      setPadEnabled(val, true);
     },
     getState() {
       return { ...state };
