@@ -158,7 +158,7 @@ PeerJS（同梱）を利用した P2P オンライン通信対戦に対応して
 ```text
 assets/avatars/
   manifest.json               # 登録アバター一覧
-  chen/                      # 自作カスタムアバターの例
+  my-avatar/                 # 自作カスタムアバターの例（※ "_" で始まるフォルダは git 対象外）
     avatar.json              # アバター定義（名前・作者・形式など）
     portrait.png             # UI表示用アイコン (256x256px)
     01-idle-clean.png        # 待機 (6コマ)
