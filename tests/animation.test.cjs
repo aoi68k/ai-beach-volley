@@ -38,6 +38,7 @@ const document = {
 class Image {
   complete = true;
   get naturalWidth() {
+    if (this.src?.includes('block-straight-v1')) return 1024;
     if (this.src?.includes('block-v2')) return 1086;
     if (this.src?.includes('serve-v1')) return 1774;
     return this.src?.includes('flying-receive')
@@ -49,6 +50,7 @@ class Image {
           : 1536;
   }
   get naturalHeight() {
+    if (this.src?.includes('block-straight-v1')) return 1536;
     if (this.src?.includes('block-v2')) return 1448;
     if (this.src?.includes('serve-v1')) return 887;
     return this.src?.includes('flying-receive')
@@ -288,15 +290,22 @@ for (let athlete = 0; athlete < 4; athlete++) {
 assert(!fs.readFileSync('js/game.js', 'utf8').includes('back-dash'));
 assert(!fs.readFileSync('js/game.js', 'utf8').includes('-run-v4'));
 assert(!fs.readFileSync('character-preview.html', 'utf8').includes('-run-v4'));
-// Logical block frames 2/3/4 map to the new atlas columns 0/1/2.
+// The active block uses portrait cells without squashing the extended legs.
 for (let athlete = 0; athlete < 4; athlete++) {
   run(`reset();players[${athlete}].y=FLOOR-100;showAction(players[${athlete}], 'block');players[${athlete}].blockFrames=.4;`);
   for (const remaining of [.4, .2, .001, 0]) {
     run(`players[${athlete}].blockFrames=${remaining};drawPlayer(players[${athlete}]);`);
     const call = draws.at(-1);
-    assert.equal(call[0].src, 'assets/characters/block-v2.png');
-    assert.deepEqual(call.slice(1, 5), [(remaining > 0 ? 0 : 2) * 362, athlete * 362, 362, 362]);
-    assert.deepEqual(call.slice(7, 9), [120, 120]);
+    if (remaining > 0) {
+      assert.equal(call[0].src, 'assets/characters/block-straight-v1.png');
+      assert.deepEqual(call.slice(1, 5), [athlete % 2 * 512, Math.floor(athlete / 2) * 768, 512, 768]);
+      assert.deepEqual(call.slice(7, 9), [100, 150]);
+      assert.equal(call[6], -[730, 730, 734, 730][athlete] / 512 * 100);
+    } else {
+      assert.equal(call[0].src, 'assets/characters/block-v2.png');
+      assert.deepEqual(call.slice(1, 5), [2 * 362, athlete * 362, 362, 362]);
+      assert.deepEqual(call.slice(7, 9), [120, 120]);
+    }
   }
 }
 // A successful interception removes the hitbox and shows source cell 4.
@@ -313,12 +322,14 @@ assert.deepEqual(pose(), { block: true, frame: 4 });
 run('players[0].y=FLOOR;players[0].landTime=.1;');
 assert.deepEqual(pose(), { row: 3, frame: 5 });
 // Missing block art uses the original overhead pose, then the v3 fallback.
-run("reset();players[0].y=FLOOR-100;players[0].blockFrames=.4;blockArt.complete=false;drawPlayer(players[0]);");
+run("reset();players[0].y=FLOOR-100;players[0].blockFrames=.4;straightBlockArt.complete=false;drawPlayer(players[0]);");
+assert.equal(draws.at(-1)[0].src, 'assets/characters/block-v2.png');
+run('blockArt.complete=false;drawPlayer(players[0]);');
 assert.equal(draws.at(-1)[0].src, 'assets/volleyball-players-v2.png');
 assert.equal(draws.at(-1)[1], 4 * 256);
 run('playerArt.complete=false;drawPlayer(players[0]);');
 assert.equal(draws.at(-1)[0], run('animatedPlayerArt[0]'));
-run('blockArt.complete=true;playerArt.complete=true;');
+run('straightBlockArt.complete=true;blockArt.complete=true;playerArt.complete=true;');
 
 // Toss input uses the existing ready frame; only contact selects the new art.
 run('mode=5;reset();serveTimer=0;ball.x=1000;keys.add("KeyX");updateActivePlayer(players[0],0,[]);');

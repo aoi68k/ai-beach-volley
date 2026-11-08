@@ -370,26 +370,48 @@
       );
     };
 
-    // Prevent touch scrolling when in fullscreen arena
+    const shouldLockScroll = () => {
+      if (typeof window.rallyGame?.shouldLockScroll === 'function') {
+        return window.rallyGame.shouldLockScroll();
+      }
+      if (!isFullscreen()) return false;
+      const snapshot = window.rallyGame?.snapshot?.();
+      if (!snapshot?.running || snapshot?.winner) return false;
+      const doc = typeof document !== 'undefined' ? document : null;
+      if (doc?.querySelector?.('dialog[open]')) return false;
+      const overlay = doc?.querySelector?.('#overlay');
+      if (overlay && !overlay.classList?.contains?.('hidden')) return false;
+      return true;
+    };
+
+    const isInsideDialog = (e) => {
+      const target = e?.target;
+      return Boolean(target && (target.closest?.('dialog') || target.tagName?.toLowerCase?.() === 'dialog'));
+    };
+
+    // Prevent touch scrolling when actively playing in fullscreen arena
     window.addEventListener('touchmove', (e) => {
-      if (isFullscreen()) {
+      if (isInsideDialog(e)) return;
+      if (shouldLockScroll()) {
         e.preventDefault();
       }
     }, { passive: false });
 
-    // Prevent pinch-zoom gesture in fullscreen arena (iOS Safari)
+    // Prevent pinch-zoom gesture in fullscreen arena during gameplay
     ['gesturestart', 'gesturechange', 'gestureend'].forEach(name => {
       window.addEventListener(name, (e) => {
-        if (isFullscreen()) {
+        if (isInsideDialog(e)) return;
+        if (shouldLockScroll()) {
           e.preventDefault();
         }
       }, { passive: false });
     });
 
-    // Prevent double-tap zoom in fullscreen arena
+    // Prevent double-tap zoom in fullscreen arena during gameplay
     let lastTouchEndTime = 0;
     window.addEventListener('touchend', (e) => {
-      if (isFullscreen()) {
+      if (isInsideDialog(e)) return;
+      if (shouldLockScroll()) {
         const now = performance.now();
         if (now - lastTouchEndTime < 350) {
           e.preventDefault();

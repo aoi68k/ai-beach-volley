@@ -1685,7 +1685,7 @@ test('touch controls appear on touch devices with D-Pad and A/B buttons, and rou
   await mobileContext.close();
 });
 
-test('fullscreen arena on mobile locks scroll and zoom, adds is-arena-fullscreen, and unlocks on exit', async ({ browser }) => {
+test('fullscreen arena on mobile defers scroll lock until gameplay, allows dialog scroll, and unlocks on exit', async ({ browser }) => {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     hasTouch: true,
@@ -1698,7 +1698,26 @@ test('fullscreen arena on mobile locks scroll and zoom, adds is-arena-fullscreen
   await fsBtn.click();
   await expect.poll(async () => page.evaluate(() => window.rallyGame.isFullscreen())).toBe(true);
 
-  // Body and documentElement get fullscreen lock class
+  // Before actual gameplay begins (initial overlay visible), scroll lock must NOT be active
+  await expect(page.locator('body')).not.toHaveClass(/is-arena-fullscreen/);
+  await expect(page.locator('html')).not.toHaveClass(/is-arena-fullscreen/);
+
+  // Opening lobby / player setting dialog allows scrolling and does NOT lock
+  await page.locator('#start').click();
+  await expect(page.locator('#lobby')).toBeVisible();
+  await expect(page.locator('body')).not.toHaveClass(/is-arena-fullscreen/);
+  await expect(page.locator('html')).not.toHaveClass(/is-arena-fullscreen/);
+
+  const lobbyDialog = page.locator('#lobby');
+  const dialogTouchAction = await lobbyDialog.evaluate(el => window.getComputedStyle(el).touchAction);
+  expect(dialogTouchAction).toBe('pan-y');
+
+  // Launch match from lobby (actual gameplay starts)
+  await page.locator('#launch-match').click();
+  await expect(page.locator('#lobby')).not.toBeVisible();
+  await expect.poll(async () => page.evaluate(() => window.rallyGame.snapshot().running)).toBe(true);
+
+  // Now during actual gameplay, fullscreen scroll lock IS active
   await expect(page.locator('body')).toHaveClass(/is-arena-fullscreen/);
   await expect(page.locator('html')).toHaveClass(/is-arena-fullscreen/);
 

@@ -76,6 +76,8 @@ Bare feet and matching wrist bands. Preserve the four distinct identities across
 
 ## ブロック専用画像（2026-11-04）
 
+2026-11-08追加更新：判定中の1コマ目は `characters/block-straight-v1.png` を優先使用。脚を伸ばし、1024×1536の2列×2行（512×768の縦長セル）に4キャラを配置。幅100px・高さ150pxで縦横比を保ち、足元基準730・730・734・730pxで描画する。成功・空振り終了はblock-v2を使用。内蔵ImageGenで生成し無加工で保存。プロンプト：`characters/block-straight-v1-generation-prompt.txt`。
+
 2026-11-08更新：現在は `characters/block-v2.png`（1086×1448、3列×4行、1セル362px）を使用。内蔵ImageGenで、トスのヒット画像 `toss-hit-v2.png` に頭身・体格を合わせて描き直した。列は判定中・成功・空振り終了、行は赤男・赤女・青男・青女。描画サイズ120px、足元は各セルの352〜355pxを基準にゲームとプレビューで統一。旧画像の内部フレーム番号2・3・4を、新画像の列0・1・2へ対応させる。生成画像は透過を保ち無加工で保存。最終プロンプト：`characters/block-v2-generation-prompt.txt`。
 
 `characters/block-v1.png`: 内蔵ImageGenで作成した透過PNG（1536×1024、6列×4行）。参照は `../assets/volleyball-players-v2.png`。上から赤男・赤女・青男・青女。画像は生成時の6コマを保存し、採用するのは3・4・5コマ目。

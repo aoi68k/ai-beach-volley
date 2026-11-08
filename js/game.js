@@ -15,6 +15,9 @@ const ballArt = loadImage('assets/volleyball-ball-v1.png');
 const attackSwooshArt = loadImage('assets/effects/attack-swoosh-v1.png');
 const playerArt = loadImage('assets/volleyball-players-v2.png');
 const blockArt = loadImage('assets/characters/block-v2.png');
+const straightBlockArt = loadImage('assets/characters/block-straight-v1.png');
+// Portrait cells keep the extended legs at the same body scale as the toss.
+const STRAIGHT_BLOCK_BASELINES = [730, 730, 734, 730].map(y => y / 512);
 const tossHitArt = loadImage('assets/characters/toss-hit-v2.png');
 const receiveHitArt = loadImage('assets/characters/receive-hit-v1.png');
 const serveArt = loadImage('assets/characters/serve-v1.png');
@@ -316,6 +319,7 @@ function setOverlay(title, description, buttonText, visible = true) {
   if (p) p.textContent = description;
   const startBtn = doc.querySelector('#start');
   if (startBtn?.firstChild) startBtn.firstChild.textContent = buttonText;
+  updateFullscreenUI();
 }
 
 function createPlayer(x, index) {
@@ -401,13 +405,25 @@ function isFullscreenArena() {
   );
 }
 
+function shouldLockArenaScroll() {
+  if (!isFullscreenArena()) return false;
+  if (!running || winner) return false;
+  const doc = typeof document !== 'undefined' ? document : null;
+  if (!doc) return false;
+  if (doc.querySelector?.('dialog[open]')) return false;
+  const overlay = getArenaElement('#overlay');
+  if (overlay && !overlay.classList?.contains?.('hidden')) return false;
+  return true;
+}
+
 function updateFullscreenUI() {
   const active = isFullscreenArena();
+  const shouldLock = shouldLockArenaScroll();
   const btn = document.querySelector?.('#toggle-fullscreen');
   const arena = document.querySelector?.('#arena') || document.querySelector?.('.arena');
   if (typeof document !== 'undefined') {
-    document.body?.classList?.toggle?.('is-arena-fullscreen', active);
-    document.documentElement?.classList?.toggle?.('is-arena-fullscreen', active);
+    document.body?.classList?.toggle?.('is-arena-fullscreen', shouldLock);
+    document.documentElement?.classList?.toggle?.('is-arena-fullscreen', shouldLock);
   }
   if (arena && arena.classList?.toggle) {
     const doc = typeof document !== 'undefined' ? document : null;
@@ -494,6 +510,28 @@ function initFullscreenControl() {
     ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(ev => {
       document.addEventListener(ev, updateFullscreenUI);
     });
+    document.addEventListener('close', e => {
+      if (e.target?.tagName?.toLowerCase?.() === 'dialog') {
+        updateFullscreenUI();
+      }
+    }, true);
+    if (typeof MutationObserver !== 'undefined' && document.body) {
+      try {
+        const dialogObserver = new MutationObserver(mutations => {
+          for (const m of mutations) {
+            if (m.type === 'attributes' && m.attributeName === 'open') {
+              updateFullscreenUI();
+              break;
+            }
+          }
+        });
+        dialogObserver.observe(document.body, {
+          attributes: true,
+          subtree: true,
+          attributeFilter: ['open']
+        });
+      } catch (_) {}
+    }
   }
   updateFullscreenUI();
 }
@@ -739,6 +777,7 @@ function startCharacterCheck(initialMode = checkMode || 'free') {
   initCurrentCheckMode();
   syncCheckModeUI();
   syncModeButtons();
+  updateFullscreenUI();
   canvas.focus?.();
 }
 
@@ -2676,7 +2715,16 @@ function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor 
       frame = 0;
     }
   } else if (pose.block) {
-    if (blockArt.complete && blockArt.naturalWidth) {
+    if (pose.frame === 2 && straightBlockArt.complete && straightBlockArt.naturalWidth) {
+      art = straightBlockArt;
+      columns = 2;
+      rows = 2;
+      row = Math.floor(athlete / 2);
+      frame = athlete % 2;
+      sourceHeight = art.naturalHeight / rows;
+      baseline = STRAIGHT_BLOCK_BASELINES[athlete] * 256;
+      size = 100;
+    } else if (blockArt.complete && blockArt.naturalWidth) {
       art = blockArt;
       columns = 3;
       row = athlete;
@@ -3890,8 +3938,8 @@ window.rallyGame = {
         highToss: TOSS_SPEEDS.high, powerReceive: TOSS_SPEEDS.powerReceive, mozuDive: SPECIAL_RULES.mozuDiveSpeed, referenceServes, quickMax: 1350, empoweredMax: 1350 },
       knockback: { ...KNOCKBACK_RULES, empowered: SPECIAL_RULES.knockback, empoweredGround: SPECIAL_RULES.knockbackGround, impactRecovery: SPECIAL_RULES.impactRecovery } };
   },
-  start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); getArenaElement('#overlay')?.classList.add('hidden'); },
-  stop() { reset(); keys.clear(); },
+  start() { reset(); running = true; beginServe(0); window.rallyAudio?.unlock(); getArenaElement('#overlay')?.classList.add('hidden'); updateFullscreenUI(); },
+  stop() { reset(); keys.clear(); updateFullscreenUI(); },
   pause() { if (running) { paused = !paused; status(); } },
   syncAssignments() {
     if (window.matchLobby?.online && !window.matchLobby.guest) {
@@ -3965,9 +4013,11 @@ window.rallyGame = {
     if (winner) setOverlay(score[0] >= WINNING_SCORE ? 'CORAL WINS!' : 'BLUE WINS!', 'ロビーで次の試合の担当を決めましょう。', 'LOBBY ');
     else getArenaElement('#overlay')?.classList.toggle('hidden', running);
     status();
+    updateFullscreenUI();
   },
   toggleFullscreen,
   isFullscreen: isFullscreenArena,
+  shouldLockScroll: shouldLockArenaScroll,
   requestFullscreen: requestFullscreenArena,
   exitFullscreen: exitFullscreenArena,
   togglePopout,

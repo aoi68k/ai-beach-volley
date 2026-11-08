@@ -775,7 +775,7 @@ footer {
   }
 }
 
-dialog { width: min(940px, 95vw); max-height: 92vh; overflow: auto; border: 1px solid #83b6c3; border-radius: 12px; padding: 28px; background: var(--paper); color: var(--ink); box-shadow: 0 24px 80px #061c2c66; }
+dialog { width: min(940px, 95vw); max-height: 92vh; overflow: auto; border: 1px solid #83b6c3; border-radius: 12px; padding: 28px; background: var(--paper); color: var(--ink); box-shadow: 0 24px 80px #061c2c66; touch-action: pan-y !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 dialog::backdrop { background: #123e58b0; backdrop-filter: blur(5px); }
 .lobby-heading { display: flex; justify-content: space-between; align-items: start; gap: 16px; padding: 22px 28px; margin: -28px -28px 18px; background: var(--navy); border-bottom: 3px solid var(--blue); color: #fff9e5; }
 .lobby-heading h2 { font: italic 900 clamp(30px, 5vw, 52px)/1 'Barlow Condensed', Impact, sans-serif; text-shadow: 2px 3px #24748a; }
@@ -1055,6 +1055,15 @@ body.is-arena-fullscreen {
   -webkit-user-select: none !important;
   -webkit-touch-callout: none !important;
   overscroll-behavior: none !important;
+}
+
+html.is-arena-fullscreen dialog,
+body.is-arena-fullscreen dialog {
+  touch-action: pan-y !important;
+  pointer-events: auto !important;
+  user-select: auto !important;
+  -webkit-user-select: auto !important;
+  -webkit-touch-callout: default !important;
 }
 
 /* --- On-Screen Touch Controls (Mobile Only) --- */
