@@ -1897,3 +1897,56 @@ test('hosting room disables local-mode button until leave-room is clicked', asyn
   await expect(page.locator('#lobby-message')).toContainText('部屋を退出しました');
   await expect(localModeBtn).toBeEnabled();
 });
+
+test('welcome start button is horizontally centered in overlay card', async ({ page }) => {
+  await page.goto('/');
+  const cardBox = await page.locator('.overlay-card').boundingBox();
+  const btnBox = await page.locator('#start').boundingBox();
+  expect(cardBox).not.toBeNull();
+  expect(btnBox).not.toBeNull();
+  const cardCenterX = cardBox.x + cardBox.width / 2;
+  const btnCenterX = btnBox.x + btnBox.width / 2;
+  expect(Math.abs(cardCenterX - btnCenterX)).toBeLessThanOrEqual(2);
+});
+
+test('UI interactions trigger dedicated UI sound effects', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    window.playedSounds = [];
+    const origPlay = window.rallyAudio.play;
+    window.rallyAudio.play = function(name) {
+      window.playedSounds.push(name);
+      return origPlay.apply(this, arguments);
+    };
+  });
+
+  // 1. Click start button triggers uiConfirm
+  await page.locator('#start').click();
+  expect(await page.evaluate(() => window.playedSounds)).toContain('uiConfirm');
+
+  // 2. Tab change in lobby triggers uiTab
+  await page.evaluate(() => { window.playedSounds = []; });
+  await page.locator('#host-room').click();
+  expect(await page.evaluate(() => window.playedSounds)).toContain('uiTab');
+
+  // 3. Close lobby triggers uiCancel
+  await page.evaluate(() => { window.playedSounds = []; });
+  await page.locator('#close-lobby').click();
+  expect(await page.evaluate(() => window.playedSounds)).toContain('uiCancel');
+  await expect(page.locator('#lobby')).toBeHidden();
+
+  // 4. Re-open and gamepad navigation focus movement triggers uiMove
+  await page.locator('#start').click();
+  await expect(page.locator('#lobby')).toBeVisible();
+  await page.evaluate(() => {
+    window.playedSounds = [];
+    window.matchLobby.setGamepadDetected(true);
+  });
+  await page.keyboard.press('ArrowUp');
+  expect(await page.evaluate(() => window.playedSounds)).toContain('uiMove');
+
+  // 5. Select assignment change triggers uiSelect
+  await page.evaluate(() => { window.playedSounds = []; });
+  await page.locator('#player-slots select').first().selectOption('0');
+  expect(await page.evaluate(() => window.playedSounds)).toContain('uiSelect');
+});

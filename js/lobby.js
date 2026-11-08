@@ -97,6 +97,7 @@
       }
       select.disabled = participant || playing;
       select.onchange = () => {
+        window.rallyAudio?.play('uiSelect');
         const value = online ? (select.value === '0' ? 0 : select.value) : Number(select.value);
         owners = owners.map((v, i) => i === index ? value : (value && v === value ? 0 : v));
         if (online) sync(); else render();
@@ -424,6 +425,9 @@
   }
 
   function applyNavFocus(el) {
+    if (el && currentFocusElement && el !== currentFocusElement && $('lobby')?.open) {
+      window.rallyAudio?.play('uiMove');
+    }
     document.querySelectorAll('.gamepad-focused').forEach(target => target.classList.remove('gamepad-focused'));
     document.querySelectorAll('.in-btn-a-badge').forEach(badge => badge.remove());
 
@@ -664,7 +668,7 @@
   window.addEventListener('gamepadconnected', () => updateGamepadDetection());
   window.addEventListener('gamepaddisconnected', () => updateGamepadDetection());
   $('lobby')?.addEventListener('close', () => applyNavFocus(null));
-  $('start').onclick = () => window.matchLobby.show();
+  $('start').onclick = () => { window.rallyAudio?.play('uiConfirm'); window.matchLobby.show(); };
   $('lobby').addEventListener('cancel', e => { if (participantView()) e.preventDefault(); });
   window.addEventListener('keydown', e => {
     if (e.key === 'Escape' && participantView() && $('lobby').open) {
@@ -672,10 +676,11 @@
       e.stopPropagation();
     }
   }, { capture: true });
-  $('close-lobby').onclick = () => { if (!participantView()) $('lobby').close(); };
+  $('close-lobby').onclick = () => { if (!participantView()) { window.rallyAudio?.play('uiCancel'); $('lobby').close(); } };
   const leaveBtn = $('leave-lobby');
   if (leaveBtn) {
     leaveBtn.onclick = () => {
+      window.rallyAudio?.play('uiCancel');
       invited = null;
       if (typeof window !== 'undefined' && window.history?.replaceState) {
         try {
@@ -691,20 +696,23 @@
       render();
     };
   }
-  $('local-mode').onclick = () => { if (participantView()) return; teardown(); show(); message('この端末の操作担当を選んでください。'); };
-  $('host-room').onclick = () => { if (!participantView()) connect(); };
+  $('local-mode').onclick = () => { if (participantView()) return; window.rallyAudio?.play('uiTab'); teardown(); show(); message('この端末の操作担当を選んでください。'); };
+  $('host-room').onclick = () => { if (!participantView()) { window.rallyAudio?.play('uiTab'); connect(); } };
   $('join-room').onclick = () => {
+    window.rallyAudio?.play('uiConfirm');
     const code = $('room-code').value.trim();
     if (!/^[a-zA-Z0-9_-]{1,80}$/.test(code)) { message('招待された部屋コードを入力してください。'); return; }
     connect(code);
   };
-  $('leave-room').onclick = () => teardown('部屋を退出しました。');
+  $('leave-room').onclick = () => { window.rallyAudio?.play('uiCancel'); teardown('部屋を退出しました。'); };
   $('copy-invite').onclick = async () => {
+    window.rallyAudio?.play('uiConfirm');
     try { await navigator.clipboard.writeText($('invite-link').value); message('招待リンクをコピーしました。'); }
     catch { $('invite-link').select(); message('招待リンクを選択しました。コピーして共有してください。'); }
   };
   $('launch-match').onclick = () => {
     if (participantView() || (online && !room) || playing) return;
+    window.rallyAudio?.play('confirm');
     playing = true; game.start(); $('lobby').close(); $('game').focus(); if (online) { sync(); broadcast({ type: 'start' }); }
   };
   render();

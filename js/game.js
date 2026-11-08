@@ -281,6 +281,7 @@ function syncCheckModeUI() {
 
 function setCheckMode(nextMode) {
   if (nextMode !== 'free' && nextMode !== 'serve' && nextMode !== 'receive') return;
+  if (nextMode !== checkMode) window.rallyAudio?.play('uiTab');
   checkMode = nextMode;
   checkBallResetTimer = 0;
   checkIncomingLabel = '';
@@ -495,6 +496,7 @@ async function exitFullscreenArena() {
 }
 
 async function toggleFullscreen() {
+  window.rallyAudio?.play('uiConfirm');
   if (isFullscreenArena()) {
     await exitFullscreenArena();
   } else {
@@ -724,6 +726,7 @@ function restorePopoutArena() {
 }
 
 async function togglePopout() {
+  window.rallyAudio?.play('uiConfirm');
   if (isPopoutActive()) {
     restorePopoutArena();
   } else {
@@ -789,8 +792,15 @@ function launchCheckBall() {
   launchCheckBallFree();
 }
 
-document.querySelector('#character-check').onclick = () => startCharacterCheck();
-document.querySelector('#exit-character-check').onclick = () => { reset(); window.matchLobby?.show(); };
+document.querySelector('#character-check').onclick = () => {
+  window.rallyAudio?.play('uiConfirm');
+  startCharacterCheck();
+};
+document.querySelector('#exit-character-check').onclick = () => {
+  window.rallyAudio?.play('uiCancel');
+  reset();
+  window.matchLobby?.show();
+};
 
 function serve(side) {
   serveState = null;

@@ -472,7 +472,7 @@ h2 {
 }
 
 .overlay button {
-  margin-top: 14px;
+  margin: 14px auto 0;
   background: var(--navy);
   color: #fff9e5;
   border: 1px solid #e1f4ef88;
@@ -766,7 +766,7 @@ footer {
   .overlay .eyebrow { font-size: 7px; padding: 4px 8px; margin-bottom: 5px; letter-spacing: 1px; }
   .overlay h2 { font-size: clamp(28px, 7.2vw, 58px); -webkit-text-stroke-width: 1px; text-shadow: 2px 3px 0 var(--overlay-accent), 3px 5px 0 var(--navy); }
   .overlay p { font-size: 9px; margin: 8px 0 0; }
-  .overlay button { margin-top: 8px; padding: 8px 12px; width: 180px; font-size: 9px; }
+  .overlay button { margin: 8px auto 0; padding: 8px 12px; width: 180px; font-size: 9px; }
   .overlay-card::after { height: 3px; width: 100px; margin-top: 8px; }
   .overlay-result { gap: 8px; margin: 9px auto 0; padding: 6px 10px; }
   .overlay-result strong { font-size: 27px; }
@@ -906,7 +906,7 @@ dialog small { display: block; font-size: 11px; line-height: 1.9; }
 @media (max-width: 480px) {
   .overlay.is-victory p, .overlay.is-victory .overlay-card::after { display: none; }
   .overlay.is-victory .overlay-result { margin-top: 6px; }
-  .overlay.is-victory button { margin-top: 6px; }
+  .overlay.is-victory button { margin: 6px auto 0; }
   .overlay.is-victory .overlay-card { padding: 4px 6px; }
 }
 

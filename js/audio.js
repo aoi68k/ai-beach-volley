@@ -529,12 +529,46 @@
       tone({ f0: 587.33, f1: 587.33, dur: 0.10, vol: 0.11, type: 'sine', attack: 0.003, pan: -0.18, wet: 0.3 });
       tone({ f0: 880.00, f1: 1174.66, dur: 0.16, vol: 0.13, type: 'triangle', delay: 0.045, attack: 0.003, pan: 0.18, wet: 0.38 });
       tone({ f0: 1760.00, f1: 1760.00, dur: 0.12, vol: 0.045, type: 'sine', delay: 0.05, wet: 0.45 });
+    },
+
+    uiMove: () => {
+      // Crisp subtle arcade cursor tick
+      tone({ f0: 880, f1: 960, dur: 0.032, vol: 0.05, type: 'sine', attack: 0.002, wet: 0.08 });
+    },
+
+    uiConfirm: () => {
+      // Upbeat glassy dual-tone confirmation
+      tone({ f0: 587.33, f1: 587.33, dur: 0.07, vol: 0.08, type: 'sine', attack: 0.003, pan: -0.1, wet: 0.22 });
+      tone({ f0: 880.00, f1: 880.00, dur: 0.12, vol: 0.10, type: 'triangle', delay: 0.03, attack: 0.003, pan: 0.1, wet: 0.28 });
+    },
+
+    uiCancel: () => {
+      // Soft descending cancel tone
+      tone({ f0: 659.25, f1: 440.00, dur: 0.08, vol: 0.07, type: 'triangle', attack: 0.003, wet: 0.18 });
+    },
+
+    uiSelect: () => {
+      // Light round select toggle pop
+      tone({ f0: 620, f1: 820, dur: 0.045, vol: 0.065, type: 'sine', attack: 0.002, wet: 0.14 });
+    },
+
+    uiTab: () => {
+      // Crisp snappy tab switch click
+      tone({ f0: 520, f1: 780, dur: 0.055, vol: 0.075, type: 'sine', attack: 0.002, wet: 0.16 });
     }
   };
 
   window.rallyAudio = {
     unlock,
-    play(name) { if (enabled && context?.state === 'running') { try { effects[name]?.(); } catch {} } },
+    play(name) {
+      if (enabled) {
+        if (!context) unlock();
+        else if (context.state === 'suspended') context.resume().catch(() => {});
+        if (context?.state === 'running') {
+          try { effects[name]?.(); } catch {}
+        }
+      }
+    },
     setEnabled(value) {
       enabled = value;
       if (!enabled) for (const voice of voices) { try { voice.stop(); } catch {} }

@@ -312,6 +312,7 @@
     }
     config.players[selectedPlayer].mapping[actionId] = binding;
     saveConfig();
+    window.rallyAudio?.play('uiConfirm');
     renderBindingsTable();
   }
 
@@ -325,21 +326,27 @@
     const select = document.querySelector('#gamepad-select');
 
     openBtn?.addEventListener('click', () => {
+      window.rallyAudio?.play('uiConfirm');
       dialog?.showModal();
       renderDialog();
     });
 
     const closeHandler = () => {
+      window.rallyAudio?.play('uiCancel');
       stopCapture();
       dialog?.close();
     };
 
     closeBtn?.addEventListener('click', closeHandler);
     closeFooterBtn?.addEventListener('click', closeHandler);
-    cancelCaptureBtn?.addEventListener('click', stopCapture);
+    cancelCaptureBtn?.addEventListener('click', () => {
+      window.rallyAudio?.play('uiCancel');
+      stopCapture();
+    });
 
     document.querySelectorAll('.config-tab').forEach(tab => {
       tab.addEventListener('click', () => {
+        window.rallyAudio?.play('uiTab');
         selectedPlayer = Number(tab.dataset.player);
         stopCapture();
         renderDialog();
@@ -347,6 +354,7 @@
     });
 
     select?.addEventListener('change', e => {
+      window.rallyAudio?.play('uiSelect');
       const val = Number(e.target.value);
       if (!config.players[selectedPlayer]) {
         config.players[selectedPlayer] = defaultPlayerConfig(selectedPlayer - 1);
@@ -357,6 +365,7 @@
     });
 
     resetBtn?.addEventListener('click', () => {
+      window.rallyAudio?.play('uiConfirm');
       if (!config.players[selectedPlayer]) {
         config.players[selectedPlayer] = defaultPlayerConfig(selectedPlayer - 1);
       }
