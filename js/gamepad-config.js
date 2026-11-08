@@ -146,14 +146,23 @@
 
   // --- UI & Dialog Management ---
   function updateStatusBar() {
+    const barEl = document.querySelector('#gamepad-status-bar');
     const textEl = document.querySelector('#gamepad-status-text');
     if (!textEl) return;
     const pads = getConnectedGamepads();
     if (pads.length === 0) {
-      textEl.textContent = 'コントローラーが未検出です（コントローラーのボタンを押すと認識されます）';
+      if (barEl) {
+        barEl.classList.add('is-unconnected');
+        barEl.classList.remove('is-connected');
+      }
+      textEl.innerHTML = '<span class="status-unconnected-lead">コントローラー未検出:</span> <span class="status-unconnected-badge">コントローラーのボタンを押すと認識されます</span>';
     } else {
-      const names = pads.map(p => `#${p.index}: ${p.id.replace(/\\s*\\(.*?\\)/, '')}`).join(' / ');
-      textEl.textContent = `接続中: ${pads.length}台 [ ${names} ]`;
+      if (barEl) {
+        barEl.classList.remove('is-unconnected');
+        barEl.classList.add('is-connected');
+      }
+      const names = pads.map(p => `#${p.index}: ${p.id.replace(/\s*\(.*?\)/, '')}`).join(' / ');
+      textEl.innerHTML = `<span class="status-connected-label">接続中:</span> <strong>${pads.length}台</strong> [ ${names} ]`;
     }
   }
 
