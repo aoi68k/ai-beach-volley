@@ -175,6 +175,9 @@ assets/avatars/
 ```
 
 ### アバターの作り方 & 読み込み
+> [!TIP]
+> 他のAIチャット（ChatGPT、Claude、Midjourney等）に投げて描いてもらうための詳細なプロンプトや手順は、**[HOW_TO_MAKE_AVATAR.md](file:///s:/work/ai-beachvolley/HOW_TO_MAKE_AVATAR.md)** にまとめています。コピペでそのまま依頼できます。
+
 1. **テンプレートの利用**:
    `assets/avatar-templates/` に各モーションの小分け画像（clean版・guide版）および全モーション概要図が用意されています。
 2. **AI画像生成・編集**:
