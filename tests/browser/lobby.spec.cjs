@@ -99,10 +99,14 @@ test('header displays brand, sound button, and last update date at desktop and m
   const updateEl = page.locator('.last-update');
   await expect(updateEl).toBeVisible();
   await expect(updateEl).toHaveText(/LAST UPDATE:\s*2026\/11\/07/);
+  await expect(page.locator('.desc-badge')).toBeVisible();
+  await expect(page.locator('.description')).toContainText('インストール不要・ブラウザですぐ遊べる');
   await page.screenshot({ path: 'test-results/header-desktop.png' });
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(updateEl).toBeVisible();
+  await expect(page.locator('.desc-badge')).toBeVisible();
+  await expect(page.locator('.description')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: 'test-results/header-mobile.png' });
 });
