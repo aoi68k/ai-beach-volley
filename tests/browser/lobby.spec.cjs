@@ -178,7 +178,7 @@ test('frame list reports strengths and speed limits from live settings', async (
     // 空中B: 方向なしが一番上、十字操作はその下
     'キルブロック（ネット直上／相手側でブロック）', 'ソフトブロック（自陣側でブロック）', 'フェイント', 'モズ落とし（1sp）',
     // サーブ: 方向なしが一番上、十字操作はその下
-    '地上サーブ（B）', 'ジャンプサーブ（方向なし）', 'ジャンプサーブ（前＋A）', 'ジャンプサーブ（上＋A）', 'ジャンプサーブ（後ろ＋A）', 'パワーサーブ（1sp）',
+    '地上サーブ（B）', 'ジャンプサーブ（A）', 'ジャンプサーブ（前＋A）', 'ジャンプサーブ（上＋A）', 'ジャンプサーブ（後＋A）', 'パワーサーブ（1sp）',
     // その他
     'ジャンプ・着地'
   ]);
@@ -188,6 +188,10 @@ test('frame list reports strengths and speed limits from live settings', async (
   await expect(row('レシーブ')).toContainText('自陣ネット手前へ上げる軌道');
   await expect(row('ダイレクトレシーブ')).toContainText('地上 前＋A');
   await expect(row('ダイレクトレシーブ')).toContainText('相手コートへ返す軌道');
+  await expect(row('ループシュート')).toContainText('空中 後＋A');
+  await expect(row('フェイント')).toContainText('空中 後＋B');
+  await expect(row('ジャンプサーブ（A）')).toContainText('サーブトス後、空中 A');
+  await expect(row('ジャンプサーブ（後＋A）')).toContainText('サーブトス後、空中 後＋A');
   await expect(row('ダブルアタック')).toContainText('初速1300／理論325px');
   await expect(row('パワーサーブ（1sp）')).toContainText('初速1300／理論325px');
   await expect(row('パワーアタック（1sp）')).toContainText('地上 弱：初速900／理論225px');
