@@ -107,6 +107,19 @@ test('header displays brand, sound button, and last update date at desktop and m
   await page.screenshot({ path: 'test-results/header-mobile.png' });
 });
 
+test('head includes OGP and Twitter Card meta tags for rich link sharing', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /.+/);
+  await expect(page.locator('meta[property="og:type"]')).toHaveAttribute('content', 'website');
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://aoi68k.github.io/ai-beach-volley/');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'SUNSET RALLY — Beach Volleyball');
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', 'https://aoi68k.github.io/ai-beach-volley/assets/ogp.png');
+  await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute('content', '1200');
+  await expect(page.locator('meta[property="og:image:height"]')).toHaveAttribute('content', '630');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', 'https://aoi68k.github.io/ai-beach-volley/assets/ogp.png');
+});
+
 test('player setup highlights local 1P and blue portraits face left', async ({page})=>{
   await page.goto('/');await page.locator('#start').click();
   await expect(page.locator('#player-slots .is-you strong')).toHaveText('コーラル / 男性');
