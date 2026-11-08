@@ -19,6 +19,14 @@
   let hostWaiting = false, hostReconnectTimer = null, hostTimeoutTimer = null;
   const disconnectedSlots = new Set();
   const connections = new Map(), inputs = new Map();
+
+  // --- Gamepad Navigation State ---
+  let gamepadDetected = false;
+  let mockGamepadDetected = null;
+  let navRow = -1, navCol = -1;
+  let currentFocusElement = null;
+  let lastGamepadNav = { a: false, b: false, up: false, down: false, left: false, right: false };
+  let padRepeatTimer = 0, padRepeatDir = null;
   const message = (text, type = 'info') => {
     const el = $('lobby-message');
     if (!el) return;
@@ -114,8 +122,17 @@
         helpEl.className = 'lobby-help';
       }
     }
+    if (gamepadDetected && $('lobby')?.open && navRow !== -1) {
+      const grid = getNavGrid();
+      if (grid[navRow]?.[navCol]) applyNavFocus(grid[navRow][navCol]);
+      else initLobbyFocus();
+    }
   }
-  function show() { if (!$('lobby').open) $('lobby').showModal(); render(); }
+  function show() {
+    if (!$('lobby').open) $('lobby').showModal();
+    render();
+    if (gamepadDetected) initLobbyFocus();
+  }
   function teardown(note) {
     epoch++; clearTimeout(connectionTimer);
     clearTimeout(hostReconnectTimer); hostReconnectTimer = null;
@@ -337,6 +354,7 @@
       if (code === 'Space') game.pause();
     },
     tick(now) {
+      tickGamepadNavigation(now);
       if (!online || now < nextSend) return; nextSend = now + 1000 / 30;
       if (guest) {
         if (room && !hostWaiting && now - lastHost > 5000) {
@@ -350,8 +368,292 @@
         for (const [id, value] of inputs) if (now - value.at > 15000) { connections.get(id)?.close(); return; }
         broadcast(playing ? { type: 'state', state: game.snapshot() } : { type: 'heartbeat' });
       }
-    }
+    },
+    get gamepadDetected() { return gamepadDetected; },
+    setGamepadDetected(val) {
+      mockGamepadDetected = val === null ? null : !!val;
+      updateGamepadDetection();
+    },
+    currentFocus() { return currentFocusElement; },
+    navPosition() { return { row: navRow, col: navCol }; }
   };
+
+  // --- Gamepad Lobby Navigation Implementation ---
+  function getNavGrid() {
+    const rows = [];
+    const tabs = [];
+    const localMode = $('local-mode');
+    const hostRoom = $('host-room');
+    if (localMode && !localMode.hidden && !localMode.disabled) tabs.push(localMode);
+    if (hostRoom && !hostRoom.hidden && !hostRoom.disabled) tabs.push(hostRoom);
+    if (tabs.length) rows.push(tabs);
+
+    const onlineActions = [];
+    const joinBtn = $('join-room');
+    const copyBtn = $('copy-invite');
+    const leaveRoomBtn = $('leave-room');
+    const details = $('room-details');
+    if (joinBtn && !joinBtn.hidden && !joinBtn.disabled) onlineActions.push(joinBtn);
+    if (details && !details.hidden) {
+      if (copyBtn && !copyBtn.hidden && !copyBtn.disabled) onlineActions.push(copyBtn);
+      if (leaveRoomBtn && !leaveRoomBtn.hidden && !leaveRoomBtn.disabled) onlineActions.push(leaveRoomBtn);
+    }
+    if (onlineActions.length) rows.push(onlineActions);
+
+    const selects = Array.from(document.querySelectorAll('#player-slots select')).filter(s => !s.disabled && !s.hidden);
+    if (selects.length) rows.push(selects);
+
+    const bottomActions = [];
+    const launchBtn = $('launch-match');
+    const leaveLobbyBtn = $('leave-lobby');
+    if (launchBtn && !launchBtn.hidden && !launchBtn.disabled) bottomActions.push(launchBtn);
+    if (leaveLobbyBtn && !leaveLobbyBtn.hidden && !leaveLobbyBtn.disabled) bottomActions.push(leaveLobbyBtn);
+    if (bottomActions.length) rows.push(bottomActions);
+
+    return rows;
+  }
+
+  function applyNavFocus(el) {
+    document.querySelectorAll('.gamepad-focused').forEach(target => target.classList.remove('gamepad-focused'));
+    document.querySelectorAll('.in-btn-a-badge').forEach(badge => badge.remove());
+
+    currentFocusElement = el;
+    if (!el || !$('lobby')?.open) return;
+
+    const container = el.tagName === 'SELECT' ? (el.closest('.player-card') || el) : el;
+    container.classList.add('gamepad-focused');
+
+    const aBadge = document.createElement('span');
+    aBadge.className = 'pad-btn-badge in-btn-a-badge';
+    aBadge.textContent = 'A';
+    aBadge.setAttribute('aria-hidden', 'true');
+
+    if (el.tagName === 'SELECT') {
+      const card = el.closest('.player-card');
+      const strong = card?.querySelector('strong');
+      if (strong) strong.prepend(aBadge);
+      else card?.prepend(aBadge);
+    } else {
+      el.prepend(aBadge);
+    }
+
+    try {
+      el.focus?.({ preventScroll: true });
+      container.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+    } catch (_) {}
+  }
+
+  function initLobbyFocus() {
+    const grid = getNavGrid();
+    if (!grid.length) return;
+    const lastRow = grid[grid.length - 1];
+    const launchIdx = lastRow.indexOf($('launch-match'));
+    if (launchIdx !== -1) {
+      navRow = grid.length - 1;
+      navCol = launchIdx;
+    } else {
+      navRow = 0;
+      navCol = 0;
+    }
+    applyNavFocus(grid[navRow][navCol]);
+  }
+
+  function updateGamepadBadges(connected) {
+    const startBadge = $('start-gamepad-badge');
+    if (startBadge) startBadge.hidden = !connected;
+    const closeBadge = $('close-lobby-badge');
+    if (closeBadge) closeBadge.hidden = !connected;
+  }
+
+  function updateGamepadDetection() {
+    let connected = false;
+    if (mockGamepadDetected !== null) {
+      connected = mockGamepadDetected;
+    } else {
+      const rawPads = navigator.getGamepads?.() || [];
+      for (let i = 0; i < rawPads.length; i++) {
+        const pad = rawPads[i];
+        if (pad && pad.connected !== false) {
+          connected = true;
+          break;
+        }
+      }
+    }
+
+    if (connected !== gamepadDetected) {
+      gamepadDetected = connected;
+      updateGamepadBadges(connected);
+      if (connected && $('lobby')?.open && !currentFocusElement) {
+        initLobbyFocus();
+      } else if (!connected) {
+        applyNavFocus(null);
+      }
+    }
+  }
+
+  function readGamepadNavState() {
+    const rawPads = navigator.getGamepads?.() || [];
+    let a = false, b = false, up = false, down = false, left = false, right = false;
+
+    for (let i = 0; i < rawPads.length; i++) {
+      const pad = rawPads[i];
+      if (!pad || pad.connected === false) continue;
+
+      const p1 = window.gamepadConfig?.read(1, rawPads);
+      if (p1) {
+        if (p1.shot) a = true;
+        if (p1.set) b = true;
+        if (p1.jump) up = true;
+        if (p1.down) down = true;
+        if (p1.move < -0.45) left = true;
+        if (p1.move > 0.45) right = true;
+      }
+
+      if (pad.buttons?.[0]?.pressed || pad.buttons?.[0]?.value > 0.5) a = true;
+      if (pad.buttons?.[1]?.pressed || pad.buttons?.[1]?.value > 0.5) b = true;
+      if (pad.buttons?.[2]?.pressed || pad.buttons?.[2]?.value > 0.5) a = true;
+
+      if (pad.buttons?.[12]?.pressed || pad.buttons?.[12]?.value > 0.5) up = true;
+      if (pad.buttons?.[13]?.pressed || pad.buttons?.[13]?.value > 0.5) down = true;
+      if (pad.buttons?.[14]?.pressed || pad.buttons?.[14]?.value > 0.5) left = true;
+      if (pad.buttons?.[15]?.pressed || pad.buttons?.[15]?.value > 0.5) right = true;
+
+      if (pad.axes?.[0] < -0.45) left = true;
+      if (pad.axes?.[0] > 0.45) right = true;
+      if (pad.axes?.[1] < -0.45) up = true;
+      if (pad.axes?.[1] > 0.45) down = true;
+    }
+
+    return { a, b, up, down, left, right };
+  }
+
+  function tickGamepadNavigation(now) {
+    updateGamepadDetection();
+    if (!gamepadDetected) return;
+
+    const current = readGamepadNavState();
+    const aPressed = current.a && !lastGamepadNav.a;
+    const bPressed = current.b && !lastGamepadNav.b;
+
+    const lobbyEl = $('lobby');
+    const isLobbyOpen = lobbyEl && lobbyEl.open;
+    const isConfigOpen = $('gamepad-config')?.open;
+
+    // When lobby is not open, A button opens PLAYER SETUP
+    if (!isLobbyOpen && !isConfigOpen && !playing) {
+      if (aPressed) {
+        $('start')?.click();
+      }
+      lastGamepadNav = current;
+      return;
+    }
+
+    if (isLobbyOpen && !isConfigOpen) {
+      if (bPressed) {
+        $('close-lobby')?.click();
+        lastGamepadNav = current;
+        return;
+      }
+
+      const grid = getNavGrid();
+      if (!grid.length) {
+        lastGamepadNav = current;
+        return;
+      }
+
+      let dRow = 0, dCol = 0;
+      const upEdge = current.up && !lastGamepadNav.up;
+      const downEdge = current.down && !lastGamepadNav.down;
+      const leftEdge = current.left && !lastGamepadNav.left;
+      const rightEdge = current.right && !lastGamepadNav.right;
+
+      if (upEdge) dRow = -1;
+      else if (downEdge) dRow = 1;
+      else if (leftEdge) dCol = -1;
+      else if (rightEdge) dCol = 1;
+      else if (current.up || current.down || current.left || current.right) {
+        if (!padRepeatDir) {
+          padRepeatDir = current.up ? 'up' : current.down ? 'down' : current.left ? 'left' : 'right';
+          padRepeatTimer = now + 320;
+        } else if (now >= padRepeatTimer) {
+          padRepeatTimer = now + 160;
+          if (padRepeatDir === 'up') dRow = -1;
+          else if (padRepeatDir === 'down') dRow = 1;
+          else if (padRepeatDir === 'left') dCol = -1;
+          else if (padRepeatDir === 'right') dCol = 1;
+        }
+      } else {
+        padRepeatDir = null;
+      }
+
+      if (dRow !== 0 || dCol !== 0 || !currentFocusElement) {
+        if (navRow < 0 || navRow >= grid.length) navRow = grid.length - 1;
+        if (dRow !== 0) {
+          navRow = (navRow + dRow + grid.length) % grid.length;
+        }
+        const rowLen = grid[navRow].length;
+        if (navCol < 0 || navCol >= rowLen) navCol = 0;
+        if (dCol !== 0) {
+          navCol = (navCol + dCol + rowLen) % rowLen;
+        }
+        navCol = Math.min(navCol, grid[navRow].length - 1);
+        applyNavFocus(grid[navRow][navCol]);
+      }
+
+      if (aPressed && currentFocusElement) {
+        if (currentFocusElement.tagName === 'SELECT') {
+          const len = currentFocusElement.options.length;
+          if (len > 0) {
+            currentFocusElement.selectedIndex = (currentFocusElement.selectedIndex + 1) % len;
+            currentFocusElement.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+              const updatedGrid = getNavGrid();
+              if (updatedGrid[navRow]?.[navCol]) {
+                applyNavFocus(updatedGrid[navRow][navCol]);
+              }
+            }, 0);
+          }
+        } else if (typeof currentFocusElement.click === 'function') {
+          currentFocusElement.click();
+        }
+      }
+    }
+
+    lastGamepadNav = current;
+  }
+
+  // Keyboard navigation support within lobby dialog
+  window.addEventListener('keydown', e => {
+    if (!$('lobby')?.open || $('gamepad-config')?.open) return;
+    const grid = getNavGrid();
+    if (!grid.length) return;
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      navRow = (navRow - 1 + grid.length) % grid.length;
+      navCol = Math.min(navCol, grid[navRow].length - 1);
+      applyNavFocus(grid[navRow][navCol]);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      navRow = (navRow + 1) % grid.length;
+      navCol = Math.min(navCol, grid[navRow].length - 1);
+      applyNavFocus(grid[navRow][navCol]);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const rowLen = grid[navRow]?.length || 1;
+      navCol = (navCol - 1 + rowLen) % rowLen;
+      applyNavFocus(grid[navRow][navCol]);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const rowLen = grid[navRow]?.length || 1;
+      navCol = (navCol + 1) % rowLen;
+      applyNavFocus(grid[navRow][navCol]);
+    }
+  });
+
+  window.addEventListener('gamepadconnected', () => updateGamepadDetection());
+  window.addEventListener('gamepaddisconnected', () => updateGamepadDetection());
+  $('lobby')?.addEventListener('close', () => applyNavFocus(null));
   $('start').onclick = () => window.matchLobby.show();
   $('lobby').addEventListener('cancel', e => { if (participantView()) e.preventDefault(); });
   window.addEventListener('keydown', e => {

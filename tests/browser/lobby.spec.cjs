@@ -1801,3 +1801,62 @@ test('fullscreen arena on mobile defers scroll lock until gameplay, allows dialo
 
   await context.close();
 });
+
+test('gamepad only navigation: detects controller, shows A/B badges, navigates lobby with D-pad, and launches match', async ({ page }) => {
+  await page.goto('/');
+
+  // 1. Initially without controller: badges are hidden
+  const startBadge = page.locator('#start-gamepad-badge');
+  const closeBadge = page.locator('#close-lobby-badge');
+  await expect(startBadge).toBeHidden();
+  await expect(closeBadge).toBeHidden();
+
+  // 2. Controller detected: "A" badge appears on PLAYER SETUP button
+  await page.evaluate(() => {
+    window.matchLobby.setGamepadDetected(true);
+  });
+  await expect(startBadge).toBeVisible();
+  await expect(startBadge).toHaveText('A');
+  await page.screenshot({ path: 'test-results/gamepad-start-badge.png' });
+
+  // 3. Pressing A opens PLAYER SETUP dialog
+  await page.locator('#start').click();
+  await expect(page.locator('#lobby')).toHaveAttribute('open', '');
+
+  // 4. In lobby: "B" badge is visible on close button
+  await expect(closeBadge).toBeVisible();
+  await expect(closeBadge).toHaveText('B');
+
+  // 5. Initial focus is on #launch-match with ball cursor and "A" badge
+  const launchBtn = page.locator('#launch-match');
+  await expect(launchBtn).toHaveClass(/gamepad-focused/);
+  await expect(launchBtn.locator('.in-btn-a-badge')).toBeVisible();
+  await expect(launchBtn.locator('.in-btn-a-badge')).toHaveText('A');
+  await page.screenshot({ path: 'test-results/gamepad-lobby-initial-focus.png' });
+
+  // 6. Navigate UP with D-pad / ArrowUp into player slots
+  await page.keyboard.press('ArrowUp');
+  const playerCard = page.locator('.player-card.gamepad-focused');
+  await expect(playerCard).toHaveCount(1);
+  await expect(launchBtn).not.toHaveClass(/gamepad-focused/);
+  await expect(launchBtn.locator('.in-btn-a-badge')).toHaveCount(0);
+  await expect(playerCard.locator('.in-btn-a-badge')).toHaveText('A');
+  await page.screenshot({ path: 'test-results/gamepad-lobby-slot-focus.png' });
+
+  // 7. Navigate RIGHT with D-pad / ArrowRight to next slot
+  const firstSlotText = await playerCard.locator('strong').textContent();
+  await page.keyboard.press('ArrowRight');
+  const secondPlayerCard = page.locator('.player-card.gamepad-focused');
+  const secondSlotText = await secondPlayerCard.locator('strong').textContent();
+  expect(secondSlotText).not.toBe(firstSlotText);
+
+  // 8. Navigate DOWN back to launch-match
+  await page.keyboard.press('ArrowDown');
+  await expect(launchBtn).toHaveClass(/gamepad-focused/);
+  await expect(launchBtn.locator('.in-btn-a-badge')).toBeVisible();
+
+  // 9. Press A (click on focused launch button) launches the match
+  await launchBtn.click();
+  await expect(page.locator('#lobby')).not.toBeVisible();
+  expect(await page.evaluate(() => window.rallyGame.snapshot().running)).toBe(true);
+});

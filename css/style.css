@@ -323,7 +323,7 @@ canvas {
 .arena.is-fullscreen .overlay {
   position: absolute;
   inset: 0;
-  z-index: 6;
+  z-index: 60;
 }
 
 /* --- Popout Arena Presentation --- */
@@ -482,11 +482,15 @@ h2 {
   max-width: 100%;
   padding: 15px 18px;
   text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
 }
 .overlay button:hover { background: #1a4962; border-color: var(--overlay-accent); }
 
-.overlay button span {
-  float: right;
+.overlay button .btn-arrow {
+  margin-left: auto;
 }
 
 .settings {
@@ -1093,7 +1097,7 @@ body.is-arena-fullscreen dialog {
   left: 12px;
   pointer-events: auto;
   touch-action: manipulation;
-  z-index: 35;
+  z-index: 75;
 }
 
 .touch-toggle-label {
@@ -1386,5 +1390,103 @@ body.is-arena-fullscreen dialog {
   }
   .touch-actions {
     gap: 8px;
+  }
+}
+
+/* --- Gamepad Navigation & Controller Badges --- */
+.pad-btn-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffffff;
+  background: linear-gradient(180deg, #27ae60, #1e824c);
+  border: 1.5px solid #ffffffd0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  line-height: 1;
+  vertical-align: middle;
+  letter-spacing: 0;
+  user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.pad-btn-badge.pad-btn-badge-b {
+  background: linear-gradient(180deg, #e74c3c, #c0392b);
+}
+
+#start .pad-btn-badge {
+  margin-right: 10px;
+  transform: translateY(-1px);
+}
+
+#close-lobby {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+#close-lobby .pad-btn-badge {
+  font-size: 10px;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+}
+
+/* Focused element in player setup dialog */
+.gamepad-focused {
+  outline: 2px solid #ffbe43 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 16px rgba(255, 190, 67, 0.75) !important;
+  position: relative;
+}
+
+/* Ball icon cursor placed next to the focused element */
+.gamepad-focused::before {
+  content: '';
+  position: absolute;
+  left: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  background-image: url('../assets/volleyball-ball-v1.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  animation: ball-cursor-bounce 0.7s infinite alternate ease-in-out;
+  pointer-events: none;
+  z-index: 20;
+}
+
+@keyframes ball-cursor-bounce {
+  0% { transform: translateY(-50%) translateX(0) rotate(0deg); }
+  100% { transform: translateY(-50%) translateX(-4px) rotate(-12deg); }
+}
+
+/* In-button A badge */
+.in-btn-a-badge {
+  margin-right: 8px;
+  vertical-align: middle;
+  animation: in-btn-pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes in-btn-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@media (max-width: 650px) {
+  .gamepad-focused::before {
+    left: -24px;
+    width: 18px;
+    height: 18px;
   }
 }

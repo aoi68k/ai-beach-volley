@@ -320,7 +320,9 @@ function setOverlay(title, description, buttonText, visible = true) {
   const p = doc.querySelector('#overlay p');
   if (p) p.textContent = description;
   const startBtn = doc.querySelector('#start');
-  if (startBtn?.firstChild) startBtn.firstChild.textContent = buttonText;
+  const startLabel = doc.querySelector('#start-label');
+  if (startLabel) startLabel.textContent = buttonText + ' ';
+  else if (startBtn?.firstChild) startBtn.firstChild.textContent = buttonText;
   updateFullscreenUI();
 }
 
