@@ -158,13 +158,9 @@ PeerJS（同梱）を利用した P2P オンライン通信対戦に対応して
 ```text
 assets/avatars/
   manifest.json               # 登録アバター一覧
-  coral-classic/             # 統合シート形式の例
+  chen/                      # カスタムアバター（小分け形式）
     avatar.json              # アバター定義（名前・作者・形式など）
-    sheet.png                # 42コマ統合スプライトシート (1536x1792px / 7行x6列)
     portrait.png             # UI表示用アイコン (256x256px)
-  coral-split/               # 小分け画像形式の例
-    avatar.json
-    portrait.png
     01-idle-clean.png        # 待機 (6コマ)
     02-run-a-clean.png       # 走り前半 (6コマ)
     03-run-b-clean.png       # 走り後半 (6コマ)
@@ -172,6 +168,8 @@ assets/avatars/
     05-attack-clean.png      # アタック踏み込み〜着地 (6コマ)
     06-defense-clean.png     # 守備 (レシーブ/トス/ブロック 6コマ)
     07-special-serve-clean.png # 特殊 (ブロック成功/フライング/サーブ 6コマ)
+  coral-split/               # 小分け形式のサンプル
+    ...
 ```
 
 ### アバターの作り方 & 読み込み

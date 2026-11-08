@@ -5,18 +5,13 @@
     "type": "builtin"
   },
   {
-    "id": "coral-classic",
-    "name": "コーラル男性 (統合シート)",
-    "folder": "coral-classic"
-  },
-  {
-    "id": "coral-split",
-    "name": "コーラル男性 (小分け形式)",
-    "folder": "coral-split"
-  },
-  {
     "id": "chen",
     "name": "chen",
     "folder": "chen"
+  },
+  {
+    "id": "coral-split",
+    "name": "コーラル男性 (小分けサンプル)",
+    "folder": "coral-split"
   }
 ]

@@ -1970,11 +1970,11 @@ test('avatar selection toggles avatars and updates character portraits', async (
   // 4. Default avatar label
   await expect(toggleBtns.first()).toContainText('標準');
 
-  // 5. Click toggle button -> cycles to coral-classic
+  // 5. Click toggle button -> cycles to chen
   await toggleBtns.first().click();
-  await expect(toggleBtns.first()).toContainText('コーラル男性');
+  await expect(toggleBtns.first()).toContainText('chen');
   const firstCardPortrait = page.locator('#player-slots .character-portrait').first();
-  await expect(firstCardPortrait).toHaveCSS('background-image', /coral-classic\/portrait\.png/);
+  await expect(firstCardPortrait).toHaveCSS('background-image', /chen\/portrait\.png/);
   await expect(firstCardPortrait).toHaveClass(/is-avatar-portrait/);
 
   // 6. Click toggle button until it cycles back to standard
