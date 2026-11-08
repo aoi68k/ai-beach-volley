@@ -355,6 +355,28 @@ function createPlayer(x, index) {
   };
 }
 
+function resetPlayerActionState(p, x = p?.x ?? 0, y = FLOOR) {
+  if (!p) return;
+  p.x = x;
+  p.y = y;
+  p.vx = 0;
+  p.vy = 0;
+  p.action = null;
+  p.actionFrames = 0;
+  p.cooldownFrames = 0;
+  p.recoveryFrames = 0;
+  p.blockFrames = 0;
+  p.knockback = 0;
+  p.landTime = 0;
+  p.attackReady = false;
+  p.setReady = false;
+  p.receiveReady = false;
+  p.attackChargeFrames = 0;
+  p.airborneTouch = false;
+  p.airborneActionTaken = false;
+  p.airborneShotHeld = false;
+}
+
 function reset() {
   serveTurns = [0, 0];
   characterCheck = false;
@@ -836,10 +858,7 @@ function beginServe(side) {
   serve(side);
   const serverIndex = characterCheck ? 0 : side * 2 + (serveTurns[side]++ % 2);
   const server = players[serverIndex];
-  Object.assign(server, { x: side ? W - 28 : 28, y: FLOOR, vx: 0, vy: 0,
-    action: null, actionFrames: 0, cooldownFrames: 0, recoveryFrames: 0, blockFrames: 0,
-    knockback: 0, landTime: 0, attackReady: false, setReady: false, receiveReady: false,
-    attackChargeFrames: 0, airborneTouch: false, airborneActionTaken: false, airborneShotHeld: false });
+  resetPlayerActionState(server, side ? W - 28 : 28, FLOOR);
   serveState = { phase: 'holding', serverIndex, age: 0,
     shotHeld: false, setHeld: false, comStyle: Math.random() < .5 ? 'jump' : 'standing',
     comAim: server.specials > 0 && Math.random() < .5 ? 'power'
@@ -870,40 +889,23 @@ function serveVelocity(b, side, variant) {
     vy: (endY - b.y - .5 * GRAVITY * duration * duration) / duration };
 }
 
+function createCheckServeBall(name, variant) {
+  return {
+    name,
+    spawn: () => {
+      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
+      const vel = serveVelocity(b, 1, variant);
+      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: variant };
+    }
+  };
+}
+
 // Practical incoming ball trajectories from the opponent court (Blue side) for character check receive mode.
 const CHECK_RECEIVE_BALLS = [
-  {
-    name: '通常サーブ',
-    spawn: () => {
-      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
-      const vel = serveVelocity(b, 1, 'normal');
-      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'normal' };
-    }
-  },
-  {
-    name: '高速サーブ',
-    spawn: () => {
-      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
-      const vel = serveVelocity(b, 1, 'fast');
-      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'fast' };
-    }
-  },
-  {
-    name: '高弾道サーブ',
-    spawn: () => {
-      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
-      const vel = serveVelocity(b, 1, 'high');
-      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'high' };
-    }
-  },
-  {
-    name: 'チェンジアップサーブ',
-    spawn: () => {
-      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
-      const vel = serveVelocity(b, 1, 'slow');
-      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'slow' };
-    }
-  },
+  createCheckServeBall('通常サーブ', 'normal'),
+  createCheckServeBall('高速サーブ', 'fast'),
+  createCheckServeBall('高弾道サーブ', 'high'),
+  createCheckServeBall('チェンジアップサーブ', 'slow'),
   {
     name: 'パワーサーブ',
     spawn: () => {
@@ -962,21 +964,7 @@ function initCurrentCheckMode() {
   checkBallResetTimer = 0;
   if (!characterCheck || !players[0]) return;
   const p = players[0];
-  p.vx = 0;
-  p.vy = 0;
-  p.action = null;
-  p.actionFrames = 0;
-  p.cooldownFrames = 0;
-  p.recoveryFrames = 0;
-  p.blockFrames = 0;
-  p.knockback = 0;
-  p.landTime = 0;
-  p.airborneTouch = false;
-  p.airborneActionTaken = false;
-  p.airborneShotHeld = false;
-  p.attackReady = false;
-  p.setReady = false;
-  p.receiveReady = false;
+  resetPlayerActionState(p);
 
   if (checkMode === 'serve') {
     setupCheckServe();
@@ -995,14 +983,8 @@ function initCurrentCheckMode() {
 }
 
 function setupCheckServe() {
-  serveState = null;
   const p = players[0];
   if (!p) return;
-  p.x = 28;
-  p.y = FLOOR;
-  p.vx = 0;
-  p.vy = 0;
-  p.action = null;
   p.specials = Math.max(3, p.specials);
   serveTurns[0] = 0;
   checkIncomingLabel = '';
@@ -1032,19 +1014,9 @@ function launchCheckBallReceive() {
   ball.serveVariant = spawned.serveVariant ?? null;
   ball.specialShot = spawned.specialShot ?? null;
   ball.feintDrive = spawned.feintDrive ?? 0;
-  ball.trail = [];
-  ball.lastSide = 1;
-  ball.lastHitter = null;
-  ball.touchSide = null;
-  ball.teamTouches = 0;
   serveTimer = 0;
-  serveState = null;
   checkIncomingLabel = pattern.name;
-  if (ball.specialShot === 'powerServe') {
-    playSfx('empowered');
-  } else {
-    playSfx('serve');
-  }
+  playSfx(ball.specialShot === 'powerServe' ? 'empowered' : 'serve');
   status();
 }
 
