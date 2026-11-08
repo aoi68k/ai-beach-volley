@@ -18,9 +18,15 @@
     set: false
   };
 
+  const activeDpadTouches = new Set();
+  const activeShotTouches = new Set();
+  const activeSetTouches = new Set();
+  const actionTouchIds = new Set();
   let dpadTouchId = null;
-  let shotTouchId = null;
-  let setTouchId = null;
+
+  let mouseActiveDpad = false;
+  let mouseActiveShot = false;
+  let mouseActiveSet = false;
 
   let dpadEl = null;
   let containerEl = null;
@@ -67,11 +73,7 @@
     applyPadEnabledVisuals();
     if (!padEnabled) {
       resetDpad();
-      shotTouchId = null;
-      setTouchId = null;
-      state.shot = false;
-      state.set = false;
-      updateActionVisuals();
+      resetActions();
     }
     if (persist) {
       try {
@@ -92,6 +94,17 @@
     btnB?.classList.toggle('is-active', state.set);
   }
 
+  function isTouchOverButton(btn, clientX, clientY, marginScale = 1.6) {
+    if (!btn || typeof clientX !== 'number' || typeof clientY !== 'number') return false;
+    const rect = btn.getBoundingClientRect();
+    if (!rect || rect.width <= 0) return true;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const radius = Math.max(rect.width / 2, 24) * marginScale;
+    const dist = Math.hypot(clientX - cx, clientY - cy);
+    return dist <= radius;
+  }
+
   function handleDpadCoords(clientX, clientY) {
     if (!dpadEl) return;
     const rect = dpadEl.getBoundingClientRect();
@@ -100,6 +113,17 @@
     const dx = clientX - cx;
     const dy = clientY - cy;
     const deadzone = rect.width * 0.12;
+    const maxRadius = rect.width * 1.8;
+
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxRadius) {
+      state.left = false;
+      state.right = false;
+      state.up = false;
+      state.down = false;
+      updateDpadVisuals();
+      return;
+    }
 
     state.left = dx < -deadzone;
     state.right = dx > deadzone;
@@ -110,12 +134,79 @@
   }
 
   function resetDpad() {
+    activeDpadTouches.clear();
     dpadTouchId = null;
+    mouseActiveDpad = false;
     state.left = false;
     state.right = false;
     state.up = false;
     state.down = false;
     updateDpadVisuals();
+  }
+
+  function resetActions() {
+    actionTouchIds.clear();
+    activeShotTouches.clear();
+    activeSetTouches.clear();
+    mouseActiveShot = false;
+    mouseActiveSet = false;
+    state.shot = false;
+    state.set = false;
+    updateActionVisuals();
+  }
+
+  function syncAllTouches(e) {
+    // If no touches exist on screen at all, release everything immediately
+    if (!e?.touches || e.touches.length === 0) {
+      resetDpad();
+      resetActions();
+      return;
+    }
+
+    // Build set of currently alive touch identifiers
+    const aliveIds = new Set();
+    for (let i = 0; i < e.touches.length; i++) {
+      aliveIds.add(e.touches[i].identifier);
+    }
+
+    // Explicitly delete any ended touches reported in changedTouches
+    if (e.changedTouches) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const id = e.changedTouches[i].identifier;
+        activeDpadTouches.delete(id);
+        actionTouchIds.delete(id);
+        activeShotTouches.delete(id);
+        activeSetTouches.delete(id);
+        if (dpadTouchId === id) dpadTouchId = null;
+      }
+    }
+
+    // Purge any dead touches that are no longer physically on the screen
+    for (const id of activeDpadTouches) {
+      if (!aliveIds.has(id)) activeDpadTouches.delete(id);
+    }
+    for (const id of actionTouchIds) {
+      if (!aliveIds.has(id)) actionTouchIds.delete(id);
+    }
+    for (const id of activeShotTouches) {
+      if (!aliveIds.has(id)) activeShotTouches.delete(id);
+    }
+    for (const id of activeSetTouches) {
+      if (!aliveIds.has(id)) activeSetTouches.delete(id);
+    }
+
+    // If D-Pad touch ended, try to recover from remaining alive D-Pad touch or reset
+    if (activeDpadTouches.size === 0) {
+      resetDpad();
+    } else if (dpadTouchId === null || !aliveIds.has(dpadTouchId)) {
+      dpadTouchId = activeDpadTouches.values().next().value ?? null;
+      if (dpadTouchId === null) resetDpad();
+    }
+
+    // Sync button states
+    state.shot = activeShotTouches.size > 0 || mouseActiveShot;
+    state.set = activeSetTouches.size > 0 || mouseActiveSet;
+    updateActionVisuals();
   }
 
   function setupDpadEvents() {
@@ -124,10 +215,13 @@
     dpadEl.addEventListener('touchstart', (e) => {
       e.preventDefault();
       markTouchDevice();
-      if (dpadTouchId === null && e.changedTouches.length > 0) {
-        const touch = e.changedTouches[0];
-        dpadTouchId = touch.identifier;
-        handleDpadCoords(touch.clientX, touch.clientY);
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        activeDpadTouches.add(touch.identifier);
+        if (dpadTouchId === null) {
+          dpadTouchId = touch.identifier;
+          handleDpadCoords(touch.clientX, touch.clientY);
+        }
       }
     }, { passive: false });
 
@@ -143,36 +237,26 @@
       }
     }, { passive: false });
 
-    const endDpad = (e) => {
-      if (dpadTouchId === null) return;
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === dpadTouchId) {
-          resetDpad();
-          break;
-        }
-      }
-    };
-
-    window.addEventListener('touchend', endDpad, { passive: false });
-    window.addEventListener('touchcancel', endDpad, { passive: false });
+    window.addEventListener('touchend', syncAllTouches, { passive: false });
+    window.addEventListener('touchcancel', syncAllTouches, { passive: false });
 
     // Fallback mouse/pointer click for testing & desktop inspection
-    let mouseActive = false;
     dpadEl.addEventListener('mousedown', (e) => {
-      mouseActive = true;
+      mouseActiveDpad = true;
       handleDpadCoords(e.clientX, e.clientY);
     });
     window.addEventListener('mousemove', (e) => {
-      if (!mouseActive) return;
+      if (!mouseActiveDpad) return;
       handleDpadCoords(e.clientX, e.clientY);
     });
     const stopMouse = () => {
-      if (mouseActive) {
-        mouseActive = false;
-        resetDpad();
+      if (mouseActiveDpad) {
+        mouseActiveDpad = false;
+        if (activeDpadTouches.size === 0) resetDpad();
       }
     };
     window.addEventListener('mouseup', stopMouse);
+    window.addEventListener('mouseleave', stopMouse);
   }
 
   function setupActionEvents() {
@@ -182,73 +266,94 @@
     btnA.addEventListener('touchstart', (e) => {
       e.preventDefault();
       markTouchDevice();
-      if (e.changedTouches.length > 0) {
-        shotTouchId = e.changedTouches[0].identifier;
-        state.shot = true;
-        updateActionVisuals();
-      }
-    }, { passive: false });
-
-    const endShot = (e) => {
-      if (shotTouchId === null) return;
       for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === shotTouchId) {
-          shotTouchId = null;
-          state.shot = false;
-          updateActionVisuals();
-          break;
-        }
+        const touch = e.changedTouches[i];
+        actionTouchIds.add(touch.identifier);
+        activeShotTouches.add(touch.identifier);
       }
-    };
-    window.addEventListener('touchend', endShot, { passive: false });
-    window.addEventListener('touchcancel', endShot, { passive: false });
+      state.shot = true;
+      updateActionVisuals();
+    }, { passive: false });
 
     // Button B (SET)
     btnB.addEventListener('touchstart', (e) => {
       e.preventDefault();
       markTouchDevice();
-      if (e.changedTouches.length > 0) {
-        setTouchId = e.changedTouches[0].identifier;
-        state.set = true;
-        updateActionVisuals();
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+        actionTouchIds.add(touch.identifier);
+        activeSetTouches.add(touch.identifier);
       }
+      state.set = true;
+      updateActionVisuals();
     }, { passive: false });
 
-    const endSet = (e) => {
-      if (setTouchId === null) return;
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === setTouchId) {
-          setTouchId = null;
-          state.set = false;
-          updateActionVisuals();
-          break;
+    // Sliding across or off action buttons
+    window.addEventListener('touchmove', (e) => {
+      if (actionTouchIds.size === 0) return;
+      for (let i = 0; i < e.touches.length; i++) {
+        const touch = e.touches[i];
+        if (actionTouchIds.has(touch.identifier)) {
+          const overA = isTouchOverButton(btnA, touch.clientX, touch.clientY);
+          const overB = isTouchOverButton(btnB, touch.clientX, touch.clientY);
+          if (overA) activeShotTouches.add(touch.identifier); else activeShotTouches.delete(touch.identifier);
+          if (overB) activeSetTouches.add(touch.identifier); else activeSetTouches.delete(touch.identifier);
         }
       }
-    };
-    window.addEventListener('touchend', endSet, { passive: false });
-    window.addEventListener('touchcancel', endSet, { passive: false });
+      state.shot = activeShotTouches.size > 0 || mouseActiveShot;
+      state.set = activeSetTouches.size > 0 || mouseActiveSet;
+      updateActionVisuals();
+    }, { passive: false });
+
+    window.addEventListener('touchend', syncAllTouches, { passive: false });
+    window.addEventListener('touchcancel', syncAllTouches, { passive: false });
 
     // Mouse fallback for Button A / B (click/hold)
     btnA.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      mouseActiveShot = true;
       state.shot = true;
       updateActionVisuals();
     });
     btnB.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      mouseActiveSet = true;
       state.set = true;
       updateActionVisuals();
     });
-    window.addEventListener('mouseup', () => {
-      if (shotTouchId === null && state.shot) {
-        state.shot = false;
-        updateActionVisuals();
-      }
-      if (setTouchId === null && state.set) {
-        state.set = false;
-        updateActionVisuals();
+    const stopActionMouse = () => {
+      mouseActiveShot = false;
+      mouseActiveSet = false;
+      state.shot = activeShotTouches.size > 0;
+      state.set = activeSetTouches.size > 0;
+      updateActionVisuals();
+    };
+    window.addEventListener('mouseup', stopActionMouse);
+    window.addEventListener('mouseleave', stopActionMouse);
+  }
+
+  function setupSafetyHandlers() {
+    // Window blur / app switch / tab switch resets all inputs
+    window.addEventListener('blur', () => {
+      resetDpad();
+      resetActions();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        resetDpad();
+        resetActions();
       }
     });
+    window.addEventListener('pagehide', () => {
+      resetDpad();
+      resetActions();
+    });
+    window.addEventListener('pointercancel', () => {
+      resetDpad();
+      resetActions();
+    });
+    // Prevent context menu on long-press which can swallow touchend
+    containerEl?.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
   function setupFullscreenScrollPrevention() {
@@ -340,6 +445,7 @@
 
     setupDpadEvents();
     setupActionEvents();
+    setupSafetyHandlers();
     setupFullscreenScrollPrevention();
   }
 
@@ -355,6 +461,26 @@
     init,
     read(controller = 1) {
       if (controller !== 1 || !padEnabled) return null;
+
+      // Invariant sanity check: inputs cannot stay active without touches or mouse
+      if (activeShotTouches.size === 0 && !mouseActiveShot && state.shot) {
+        state.shot = false;
+        updateActionVisuals();
+      }
+      if (activeSetTouches.size === 0 && !mouseActiveSet && state.set) {
+        state.set = false;
+        updateActionVisuals();
+      }
+      if (activeDpadTouches.size === 0 && dpadTouchId === null && !mouseActiveDpad) {
+        if (state.left || state.right || state.up || state.down) {
+          state.left = false;
+          state.right = false;
+          state.up = false;
+          state.down = false;
+          updateDpadVisuals();
+        }
+      }
+
       const move = (state.right ? 1 : 0) - (state.left ? 1 : 0);
       return {
         move,
@@ -383,11 +509,7 @@
     },
     reset() {
       resetDpad();
-      shotTouchId = null;
-      setTouchId = null;
-      state.shot = false;
-      state.set = false;
-      updateActionVisuals();
+      resetActions();
     }
   };
 })();

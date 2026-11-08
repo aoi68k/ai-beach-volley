@@ -1463,6 +1463,78 @@ test('touch controls appear on touch devices with D-Pad and A/B buttons, and rou
   expect(state.move).toBe(0);
   expect(state.jump).toBe(false);
 
+  // --- STUCK BUTTON PREVENTION TESTS ---
+
+  // 1. Multi-touch thumb roll: overlapping touches on same button must not stick
+  await btnA.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 20, clientX: 300, clientY: 700 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+
+  // Second touch arrives on same button before first lifts (thumb roll)
+  await btnA.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 21, clientX: 305, clientY: 705 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+
+  // First touch lifts while second is still down
+  await page.dispatchEvent('body', 'touchend', {
+    touches: [{ identifier: 21, clientX: 305, clientY: 705 }],
+    changedTouches: [{ identifier: 20, clientX: 300, clientY: 700 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+
+  // Second touch lifts
+  await page.dispatchEvent('body', 'touchend', {
+    touches: [],
+    changedTouches: [{ identifier: 21, clientX: 305, clientY: 705 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(false);
+
+  // 2. Touchcancel resets any stuck buttons immediately
+  await btnA.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 30, clientX: 300, clientY: 700 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+  await page.dispatchEvent('body', 'touchcancel', { touches: [], changedTouches: [] });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(false);
+
+  // 3. Window blur (app switch / notifications) resets all inputs
+  await btnB.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 40, clientX: 250, clientY: 700 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).set).toBe(true);
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  expect((await page.evaluate(() => window.touchControls.read(1))).set).toBe(false);
+
+  // 4. Sliding off action button releases it
+  const btnABox = await btnA.boundingBox();
+  expect(btnABox).toBeTruthy();
+  const aCenter = { x: btnABox.x + btnABox.width / 2, y: btnABox.y + btnABox.height / 2 };
+  await btnA.dispatchEvent('touchstart', {
+    changedTouches: [{ identifier: 50, clientX: aCenter.x, clientY: aCenter.y }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+
+  // Slide thumb 160px away (into open court)
+  await page.dispatchEvent('body', 'touchmove', {
+    touches: [{ identifier: 50, clientX: aCenter.x - 160, clientY: aCenter.y - 160 }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(false);
+
+  // Slide thumb back onto button A
+  await page.dispatchEvent('body', 'touchmove', {
+    touches: [{ identifier: 50, clientX: aCenter.x, clientY: aCenter.y }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(true);
+
+  // End touch
+  await page.dispatchEvent('body', 'touchend', {
+    touches: [],
+    changedTouches: [{ identifier: 50, clientX: aCenter.x, clientY: aCenter.y }]
+  });
+  expect((await page.evaluate(() => window.touchControls.read(1))).shot).toBe(false);
+
   await page.screenshot({ path: 'test-results/touch-controls-mobile.png' });
   await mobileContext.close();
 });
