@@ -103,7 +103,7 @@
       };
       card.append(select); $('player-slots').append(card);
     });
-    $('local-mode').disabled = online || participant;
+    $('local-mode').disabled = participant;
     $('host-room').disabled = online || participant;
     $('join-room').disabled = online;
     $('join-room').textContent = (online && guest && !room) ? '接続中…' : '参加する';
@@ -134,7 +134,28 @@
     render();
     if (gamepadDetected) initLobbyFocus();
   }
+  function showTeardownConfirm() {
+    const box = $('room-teardown-confirm');
+    if (!box) return;
+    box.hidden = false;
+    navRow = 0;
+    navCol = 1; // 安全のためデフォルトは「いいえ」にフォーカス
+    if (gamepadDetected && $('lobby')?.open) {
+      const grid = getNavGrid();
+      if (grid[0]?.[1]) applyNavFocus(grid[0][1]);
+      else if (grid[0]?.[0]) applyNavFocus(grid[0][0]);
+    }
+  }
+  function hideTeardownConfirm() {
+    const box = $('room-teardown-confirm');
+    if (!box) return;
+    box.hidden = true;
+    if (gamepadDetected && $('lobby')?.open) {
+      initLobbyFocus();
+    }
+  }
   function teardown(note) {
+    hideTeardownConfirm();
     epoch++; clearTimeout(connectionTimer);
     clearTimeout(hostReconnectTimer); hostReconnectTimer = null;
     clearTimeout(hostTimeoutTimer); hostTimeoutTimer = null;
@@ -376,11 +397,24 @@
       updateGamepadDetection();
     },
     currentFocus() { return currentFocusElement; },
-    navPosition() { return { row: navRow, col: navCol }; }
+    navPosition() { return { row: navRow, col: navCol }; },
+    isOnline() { return online; },
+    memberCount() { return members.length; },
+    isTeardownConfirmOpen() { const box = $('room-teardown-confirm'); return !!(box && !box.hidden); }
   };
 
   // --- Gamepad Lobby Navigation Implementation ---
   function getNavGrid() {
+    const confirmBox = $('room-teardown-confirm');
+    if (confirmBox && !confirmBox.hidden) {
+      const confirmRow = [];
+      const yesBtn = $('confirm-teardown-yes');
+      const noBtn = $('confirm-teardown-no');
+      if (yesBtn && !yesBtn.hidden && !yesBtn.disabled) confirmRow.push(yesBtn);
+      if (noBtn && !noBtn.hidden && !noBtn.disabled) confirmRow.push(noBtn);
+      if (confirmRow.length) return [confirmRow];
+    }
+
     const rows = [];
     const tabs = [];
     const localMode = $('local-mode');
@@ -551,6 +585,12 @@
 
     if (isLobbyOpen && !isConfigOpen) {
       if (bPressed) {
+        const confirmBox = $('room-teardown-confirm');
+        if (confirmBox && !confirmBox.hidden) {
+          hideTeardownConfirm();
+          lastGamepadNav = current;
+          return;
+        }
         $('close-lobby')?.click();
         lastGamepadNav = current;
         return;
@@ -682,7 +722,34 @@
       render();
     };
   }
-  $('local-mode').onclick = () => { if (participantView()) return; teardown(); show(); message('この端末の操作担当を選んでください。'); };
+  $('local-mode').onclick = () => {
+    if (participantView()) return;
+    if (online) {
+      const hasOthers = (members.length > 1) || (connections && connections.size > 0);
+      if (hasOthers) {
+        showTeardownConfirm();
+        return;
+      }
+    }
+    teardown();
+    show();
+    message('この端末の操作担当を選んでください。');
+  };
+  const confirmYes = $('confirm-teardown-yes');
+  if (confirmYes) {
+    confirmYes.onclick = () => {
+      hideTeardownConfirm();
+      teardown();
+      show();
+      message('部屋を解散しました。この端末の操作担当を選んでください。');
+    };
+  }
+  const confirmNo = $('confirm-teardown-no');
+  if (confirmNo) {
+    confirmNo.onclick = () => {
+      hideTeardownConfirm();
+    };
+  }
   $('host-room').onclick = () => { if (!participantView()) connect(); };
   $('join-room').onclick = () => {
     const code = $('room-code').value.trim();
