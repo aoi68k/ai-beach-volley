@@ -1975,16 +1975,16 @@ test('avatar selection toggles avatars and updates character portraits', async (
   await expect(toggleBtns.first()).toContainText('コーラル男性');
   const firstCardPortrait = page.locator('#player-slots .character-portrait').first();
   await expect(firstCardPortrait).toHaveCSS('background-image', /coral-classic\/portrait\.png/);
+  await expect(firstCardPortrait).toHaveClass(/is-avatar-portrait/);
 
-  // 6. Click toggle button again -> cycles to coral-split
-  await toggleBtns.first().click();
-  await expect(toggleBtns.first()).toContainText('小分け形式');
-
-  // 7. Click toggle button again -> cycles back to standard
-  await toggleBtns.first().click();
+  // 6. Click toggle button until it cycles back to standard
+  for (let i = 0; i < avatarCount - 1; i++) {
+    await toggleBtns.first().click();
+  }
   await expect(toggleBtns.first()).toContainText('標準');
+  await expect(firstCardPortrait).not.toHaveClass(/is-avatar-portrait/);
 
-  // 8. Select custom avatar, launch match and ensure no errors
+  // 7. Select custom avatar, launch match and ensure no errors
   await toggleBtns.first().click();
   await page.click('#launch-match');
   await expect(page.locator('#overlay')).toHaveClass(/hidden/);

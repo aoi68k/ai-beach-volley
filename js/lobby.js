@@ -84,11 +84,10 @@
       const avatar = window.avatarManager?.getPlayerAvatar(index);
       const isCustomAvatar = avatar && avatar.type !== 'builtin';
       if (isCustomAvatar && (avatar.portraitUrl || avatar.sheetUrl)) {
+        art.classList.add('is-avatar-portrait');
         art.style.backgroundImage = `url("${avatar.portraitUrl || avatar.sheetUrl}")`;
-        art.style.backgroundPosition = 'center';
-        art.style.backgroundSize = 'contain';
-        art.style.backgroundRepeat = 'no-repeat';
       } else {
+        art.classList.remove('is-avatar-portrait');
         art.style.backgroundImage = `url("assets/characters/${['coral-male', 'coral-female', 'blue-male', 'blue-female'][index]}-run-selected.png")`;
         art.style.backgroundPosition = '';
         art.style.backgroundSize = '';
