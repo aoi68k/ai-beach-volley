@@ -58,9 +58,18 @@ function scanAvatars() {
   }
 
   const manifestPath = path.join(avatarsDir, 'manifest.json');
-  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-  console.log(`[AvatarScan] Scanned ${manifest.length - 1} avatars into manifest.json:`,
-    manifest.slice(1).map(a => a.id).join(', '));
+  const newContent = JSON.stringify(manifest, null, 2) + '\n';
+
+  try {
+    const existingContent = fs.existsSync(manifestPath) ? fs.readFileSync(manifestPath, 'utf8') : '';
+    if (existingContent !== newContent) {
+      fs.writeFileSync(manifestPath, newContent, 'utf8');
+      console.log(`[AvatarScan] Updated manifest.json (${manifest.length - 1} avatars):`,
+        manifest.slice(1).map(a => a.id).join(', '));
+    }
+  } catch (err) {
+    console.warn('[AvatarScan] Failed to write manifest.json to disk:', err.message);
+  }
 
   return manifest;
 }

@@ -24,7 +24,18 @@ const server = http.createServer((req, res) => {
 
   // Auto-scan avatar folder on manifest or avatar API request
   if (relative === 'assets/avatars/manifest.json') {
-    scanAvatars();
+    try {
+      const manifest = scanAvatars();
+      const content = Buffer.from(JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store'
+      });
+      res.end(content);
+      return;
+    } catch (err) {
+      console.warn('[Server] Error scanning avatars on request:', err.message);
+    }
   }
 
   fs.readFile(path.join(root, relative), (err, data) => {
