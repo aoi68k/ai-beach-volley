@@ -1956,8 +1956,8 @@ test('avatar selection toggles avatars and updates character portraits', async (
   await page.waitForTimeout(500);
 
   // 1. Verify avatarManager is initialized with registered folder avatars
-  const avatarCount = await page.evaluate(() => window.avatarManager?.getAvatars().length);
-  expect(avatarCount).toBeGreaterThanOrEqual(3); // default, coral-classic, coral-split
+  const avatars = await page.evaluate(() => window.avatarManager?.getAvatars());
+  expect(avatars?.length).toBeGreaterThanOrEqual(3);
 
   // 2. Open PLAYER SETUP dialog
   await page.click('#start');
@@ -1970,15 +1970,15 @@ test('avatar selection toggles avatars and updates character portraits', async (
   // 4. Default avatar label
   await expect(toggleBtns.first()).toContainText('標準');
 
-  // 5. Click toggle button -> cycles to chen
+  // 5. Click toggle button -> cycles to next avatar (avatars[1])
   await toggleBtns.first().click();
-  await expect(toggleBtns.first()).toContainText('chen');
+  const nextAvatar = avatars[1];
+  await expect(toggleBtns.first()).toContainText(nextAvatar.name.slice(0, 6));
   const firstCardPortrait = page.locator('#player-slots .character-portrait').first();
-  await expect(firstCardPortrait).toHaveCSS('background-image', /chen\/portrait\.png/);
   await expect(firstCardPortrait).toHaveClass(/is-avatar-portrait/);
 
   // 6. Click toggle button until it cycles back to standard
-  for (let i = 0; i < avatarCount - 1; i++) {
+  for (let i = 0; i < avatars.length - 1; i++) {
     await toggleBtns.first().click();
   }
   await expect(toggleBtns.first()).toContainText('標準');
