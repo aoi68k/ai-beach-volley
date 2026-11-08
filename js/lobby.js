@@ -114,13 +114,20 @@
       if (online && (!room || members.length === 0)) {
         helpEl.textContent = '⏳ ホストの部屋に接続しています… 通信の確立をお待ちください。';
         helpEl.className = 'lobby-help is-connecting';
+        helpEl.hidden = false;
       } else if (online && room && members.length) {
         helpEl.textContent = `${members.length} / 4人 接続中。ホストが操作担当を指定します。未割当の参加者は観戦できます。`
           + (owners.includes(self) ? ' 金色の枠と「▼ あなた」が自分のキャラです。' : ' 現在、あなたは観戦です。');
         helpEl.className = 'lobby-help is-connected';
-      } else {
-        helpEl.textContent = participant ? '操作担当の設定と試合開始はホストが行います。' : '同じ操作担当は1キャラまで。空いたキャラはCOMにできます。';
+        helpEl.hidden = false;
+      } else if (participant) {
+        helpEl.textContent = '操作担当の設定と試合開始はホストが行います。';
         helpEl.className = 'lobby-help';
+        helpEl.hidden = false;
+      } else {
+        helpEl.textContent = '';
+        helpEl.className = 'lobby-help';
+        helpEl.hidden = true;
       }
     }
     if (gamepadDetected && $('lobby')?.open && navRow !== -1) {
