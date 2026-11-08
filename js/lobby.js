@@ -625,10 +625,7 @@
       return;
     }
 
-    if (!isLobbyOpen || isConfigOpen) {
-      lastGamepadNav = current;
-      return;
-    }
+    if (isLobbyOpen && !isConfigOpen) {
       if (bPressed) {
         $('close-lobby')?.click();
         lastGamepadNav = current;
