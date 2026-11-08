@@ -206,6 +206,11 @@
         <div id="room-details" hidden><label>招待リンク <input id="invite-link" readonly></label><button id="copy-invite">コピー</button><button id="leave-room">部屋を退出</button></div>
         <p id="lobby-message" role="status" aria-live="polite">同じ端末の1P〜4P、またはCOMを割り当てます。</p>
         <div id="player-slots" class="player-slots"></div>
+        <div class="avatar-manager-bar">
+          <input type="file" id="avatar-folder-input" webkitdirectory directory multiple hidden>
+          <button type="button" id="import-avatar-btn" class="avatar-import-btn">📁 フォルダからアバターを追加</button>
+          <span id="avatar-import-status" class="avatar-import-status" role="status" aria-live="polite"></span>
+        </div>
         <p id="lobby-help" class="lobby-help" hidden></p>
         <button id="launch-match" class="launch-match">この担当で試合開始 ↗</button>
         <small id="lobby-notes">オンラインでは各端末の1P操作（矢印 / Z・X、またはゲームパッド1）を使用。開始・一時停止はホストが操作します。接続できないネットワークでは別回線をお試しください。</small>
@@ -276,6 +281,7 @@
   <script src="vendor/peerjs.min.js"></script>
   <script src="assets/characters/idle-alignment.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/avatar.js"></script>
   <script src="js/gamepad-config.js"></script>
   <script src="js/touch-controls.js"></script>
   <script src="js/game.js"></script>

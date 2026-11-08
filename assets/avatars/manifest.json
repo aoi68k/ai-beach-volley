@@ -1,0 +1,17 @@
+[
+  {
+    "id": "default",
+    "name": "チーム標準 (デフォルト)",
+    "type": "builtin"
+  },
+  {
+    "id": "coral-classic",
+    "name": "コーラル男性 (統合シート)",
+    "folder": "coral-classic"
+  },
+  {
+    "id": "coral-split",
+    "name": "コーラル男性 (小分け形式)",
+    "folder": "coral-split"
+  }
+]

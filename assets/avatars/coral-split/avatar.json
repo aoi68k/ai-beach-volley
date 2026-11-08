@@ -1,0 +1,18 @@
+{
+  "id": "coral-split",
+  "name": "コーラル男性 (小分け形式)",
+  "author": "AI Beachvolley",
+  "description": "7枚の小分けファイルで構成されたアバターサンプル",
+  "version": "1.0",
+  "type": "split",
+  "portrait": "portrait.png",
+  "parts": {
+    "idle": "01-idle-clean.png",
+    "runA": "02-run-a-clean.png",
+    "runB": "03-run-b-clean.png",
+    "jump": "04-jump-clean.png",
+    "attack": "05-attack-clean.png",
+    "defense": "06-defense-clean.png",
+    "special": "07-special-serve-clean.png"
+  }
+}

@@ -4,6 +4,7 @@ node_modules/
 # Local working files
 /tmp/
 /work/
+/scratch/
 
 # Prompts, rough sketches, and unused draft assets (not for publication)
 *prompt*.txt

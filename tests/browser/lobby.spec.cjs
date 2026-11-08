@@ -1950,3 +1950,48 @@ test('UI interactions trigger dedicated UI sound effects', async ({ page }) => {
   await page.locator('#player-slots select').first().selectOption('0');
   expect(await page.evaluate(() => window.playedSounds)).toContain('uiSelect');
 });
+
+test('avatar selection toggles avatars and updates character portraits', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForTimeout(500);
+
+  // 1. Verify avatarManager is initialized with registered folder avatars
+  const avatarCount = await page.evaluate(() => window.avatarManager?.getAvatars().length);
+  expect(avatarCount).toBeGreaterThanOrEqual(3); // default, coral-classic, coral-split
+
+  // 2. Open PLAYER SETUP dialog
+  await page.click('#start');
+  await expect(page.locator('#lobby')).toBeVisible();
+
+  // 3. Four player cards should each have an avatar toggle button
+  const toggleBtns = page.locator('#player-slots .avatar-toggle-btn');
+  await expect(toggleBtns).toHaveCount(4);
+
+  // 4. Default avatar label
+  await expect(toggleBtns.first()).toContainText('標準');
+
+  // 5. Click toggle button -> cycles to coral-classic
+  await toggleBtns.first().click();
+  await expect(toggleBtns.first()).toContainText('コーラル男性');
+  const firstCardPortrait = page.locator('#player-slots .character-portrait').first();
+  await expect(firstCardPortrait).toHaveCSS('background-image', /coral-classic\/portrait\.png/);
+
+  // 6. Click toggle button again -> cycles to coral-split
+  await toggleBtns.first().click();
+  await expect(toggleBtns.first()).toContainText('小分け形式');
+
+  // 7. Click toggle button again -> cycles back to standard
+  await toggleBtns.first().click();
+  await expect(toggleBtns.first()).toContainText('標準');
+
+  // 8. Select custom avatar, launch match and ensure no errors
+  await toggleBtns.first().click();
+  await page.click('#launch-match');
+  await expect(page.locator('#overlay')).toHaveClass(/hidden/);
+  await page.waitForTimeout(600);
+
+  // Check that game canvas is running cleanly with custom avatar
+  const isRunning = await page.evaluate(() => !window.game?.paused);
+  expect(isRunning).toBe(true);
+});
+

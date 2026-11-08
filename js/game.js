@@ -2624,6 +2624,15 @@ function playerSpritePose(p) {
 function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor = null, cachedPose = null) {
   const athlete = p.index ?? players.indexOf(p);
   const pose = cachedPose || playerSpritePose(p);
+
+  // Custom avatar override
+  const avatar = window.avatarManager?.getPlayerAvatar(athlete);
+  if (avatar && avatar.type !== 'builtin' && avatar.ready) {
+    if (avatar.draw(ctx, p, pose, customX, customY, alpha, glowColor)) {
+      return;
+    }
+  }
+
   const runArt = selectedRunArt[athlete];
   let art = animatedPlayerArt[athlete];
   let row = pose.row;
@@ -3919,6 +3928,12 @@ function spawnGuestHitParticles() {
 
 reset();
 requestAnimationFrame(loop);
+
+window.avatarManager?.onChange(() => {
+  if (!running) {
+    draw();
+  }
+});
 
 // Host owns physics; guests only apply snapshots and send their own controller.
 window.rallyGame = {

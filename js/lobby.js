@@ -81,7 +81,19 @@
       marker.textContent = mine ? '▼ あなた' : '';
       marker.setAttribute('aria-hidden', String(!mine));
       const art = document.createElement('div'); art.className = 'character-portrait';
-      art.style.backgroundImage = `url("assets/characters/${['coral-male', 'coral-female', 'blue-male', 'blue-female'][index]}-run-selected.png")`;
+      const avatar = window.avatarManager?.getPlayerAvatar(index);
+      const isCustomAvatar = avatar && avatar.type !== 'builtin';
+      if (isCustomAvatar && (avatar.portraitUrl || avatar.sheetUrl)) {
+        art.style.backgroundImage = `url("${avatar.portraitUrl || avatar.sheetUrl}")`;
+        art.style.backgroundPosition = 'center';
+        art.style.backgroundSize = 'contain';
+        art.style.backgroundRepeat = 'no-repeat';
+      } else {
+        art.style.backgroundImage = `url("assets/characters/${['coral-male', 'coral-female', 'blue-male', 'blue-female'][index]}-run-selected.png")`;
+        art.style.backgroundPosition = '';
+        art.style.backgroundSize = '';
+        art.style.backgroundRepeat = '';
+      }
       card.append(title, marker, art);
       if (participant) {
         const owner = document.createElement('p'); owner.className = 'player-owner';
@@ -91,6 +103,28 @@
         $('player-slots').append(card);
         return;
       }
+
+      const avatarBtn = document.createElement('button');
+      avatarBtn.type = 'button';
+      avatarBtn.className = 'avatar-toggle-btn';
+      avatarBtn.setAttribute('aria-label', `${name}のアバター切り替え`);
+      avatarBtn.setAttribute('title', 'クリックでアバターを切り替え');
+      const avatarName = isCustomAvatar ? avatar.name : '標準';
+      avatarBtn.innerHTML = `<span class="avatar-tag">姿:</span> <span class="avatar-current-name">${avatarName}</span>`;
+      avatarBtn.disabled = playing;
+      avatarBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        window.rallyAudio?.play('uiSelect');
+        const list = window.avatarManager?.getAvatars() ?? [];
+        if (!list.length) return;
+        const curId = avatar?.id || 'default';
+        const curIdx = list.findIndex(a => a.id === curId);
+        const next = list[(curIdx + 1) % list.length];
+        window.avatarManager?.setPlayerAvatar(index, next.id);
+        render();
+      };
+      card.append(avatarBtn);
       const select = document.createElement('select'); select.setAttribute('aria-label', `${name}の操作担当`);
       for (const [value, label] of [[0, 'COM'], ...choices]) {
         const option = document.createElement('option'); option.value = value; option.textContent = label; option.selected = String(owners[index]) === String(value); select.append(option);
@@ -106,6 +140,10 @@
     });
     $('local-mode').disabled = online || participant;
     $('host-room').disabled = online || participant;
+    const importBtnEl = $('import-avatar-btn');
+    if (importBtnEl) importBtnEl.hidden = participant;
+    const importBarEl = document.querySelector('.avatar-manager-bar');
+    if (importBarEl) importBarEl.hidden = participant;
     $('join-room').disabled = online;
     $('join-room').textContent = (online && guest && !room) ? '接続中…' : '参加する';
     $('launch-match').disabled = participant || (online && !room) || playing;
@@ -434,7 +472,8 @@
     currentFocusElement = el;
     if (!el || !$('lobby')?.open) return;
 
-    const container = el.tagName === 'SELECT' ? (el.closest('.player-card') || el) : el;
+    const container = (el.tagName === 'SELECT' || el.classList?.contains('avatar-toggle-btn'))
+      ? (el.closest('.player-card') || el) : el;
     container.classList.add('gamepad-focused');
 
     const aBadge = document.createElement('span');
@@ -642,6 +681,13 @@
     const grid = getNavGrid();
     if (!grid.length) return;
 
+    if (e.key === 'x' || e.key === 'X') {
+      if (currentFocusElement?.tagName === 'SELECT') {
+        const card = currentFocusElement.closest('.player-card');
+        card?.querySelector('.avatar-toggle-btn')?.click();
+        return;
+      }
+    }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       navRow = (navRow - 1 + grid.length) % grid.length;
@@ -715,6 +761,35 @@
     window.rallyAudio?.play('confirm');
     playing = true; game.start(); $('lobby').close(); $('game').focus(); if (online) { sync(); broadcast({ type: 'start' }); }
   };
+
+  const importBtn = $('import-avatar-btn');
+  const folderInput = $('avatar-folder-input');
+  const importStatus = $('avatar-import-status');
+  if (importBtn && folderInput) {
+    importBtn.onclick = () => {
+      window.rallyAudio?.play('uiConfirm');
+      folderInput.click();
+    };
+    folderInput.onchange = async (e) => {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      try {
+        if (importStatus) importStatus.textContent = '⏳ アバター読み込み中…';
+        const imported = await window.avatarManager.importFromFiles(files);
+        if (imported) {
+          window.rallyAudio?.play('uiConfirm');
+          if (importStatus) importStatus.textContent = `✅ アバター「${imported.name}」を追加しました！`;
+          window.avatarManager.setPlayerAvatar(0, imported.id);
+          render();
+        }
+      } catch (err) {
+        window.rallyAudio?.play('uiCancel');
+        if (importStatus) importStatus.textContent = `⚠️ エラー: ${err.message}`;
+      }
+    };
+  }
+  window.avatarManager?.onChange(render);
+
   render();
   if (invited) {
     try {

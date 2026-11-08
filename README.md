@@ -148,6 +148,43 @@ PeerJS（同梱）を利用した P2P オンライン通信対戦に対応して
 
 ---
 
+## 🎭 キャラアバター管理 & 追加方法
+
+試合前の **PLAYER SETUP** で、各選手の見た目（アバター）を「標準（チームキャラ）」からカスタムアバターへワンクリックで切り替えることができます。
+
+### アバターのフォルダ構成
+複数のアバターは `assets/avatars/` 配下のサブフォルダ単位で管理されます。
+
+```text
+assets/avatars/
+  manifest.json               # 登録アバター一覧
+  coral-classic/             # 統合シート形式の例
+    avatar.json              # アバター定義（名前・作者・形式など）
+    sheet.png                # 42コマ統合スプライトシート (1536x1792px / 7行x6列)
+    portrait.png             # UI表示用アイコン (256x256px)
+  coral-split/               # 小分け画像形式の例
+    avatar.json
+    portrait.png
+    01-idle-clean.png        # 待機 (6コマ)
+    02-run-a-clean.png       # 走り前半 (6コマ)
+    03-run-b-clean.png       # 走り後半 (6コマ)
+    04-jump-clean.png        # ジャンプ〜着地 (6コマ)
+    05-attack-clean.png      # アタック踏み込み〜着地 (6コマ)
+    06-defense-clean.png     # 守備 (レシーブ/トス/ブロック 6コマ)
+    07-special-serve-clean.png # 特殊 (ブロック成功/フライング/サーブ 6コマ)
+```
+
+### アバターの作り方 & 読み込み
+1. **テンプレートの利用**:
+   `assets/avatar-templates/` に各モーションの小分け画像（clean版・guide版）および全モーション概要図が用意されています。
+2. **AI画像生成・編集**:
+   小分け画像（各 1536×256px、地面ライン Y=205）をベースに、ControlNet や画像生成AIでポーズを維持してキャラを変換します。
+3. **ゲームへの追加**:
+   - **リポジトリに追加する場合**: `assets/avatars/<フォルダ名>/` を作成し、画像を配置して `assets/avatars/manifest.json` に追記します。
+   - **ブラウザから即座にテストする場合**: PLAYER SETUP の **「📁 フォルダからアバターを追加」** ボタンから、作成したフォルダ（または画像群）を選択するだけで、リロードなしで即座にカスタムアバターとして使用可能です。
+
+---
+
 ## 🛠️ 開発者向け情報
 
 ### ローカル実行 & テスト
@@ -171,8 +208,11 @@ npm run test:browser
 - [js/game.js](file:///s:/work/ai-beachvolley/js/game.js): ゲームループ、物理演算、描画処理、COM思考ロジック
 - [css/style.css](file:///s:/work/ai-beachvolley/css/style.css): レトロスポーツ中継風UIスタイル、GPUレイヤー最適化
 - [js/audio.js](file:///s:/work/ai-beachvolley/js/audio.js): Web Audio API による効果音合成エンジン
+- [js/avatar.js](file:///s:/work/ai-beachvolley/js/avatar.js): キャラアバター管理・小分け/統合スプライト描画システム
 - [js/gamepad-config.js](file:///s:/work/ai-beachvolley/js/gamepad-config.js): ゲームパッド設定UI・入力リマッピング
 - [js/lobby.js](file:///s:/work/ai-beachvolley/js/lobby.js): PeerJS を用いた P2P ルーム管理・通信同期
 - [js/frame-data.js](file:///s:/work/ai-beachvolley/js/frame-data.js): ゲーム内フレームデータ表生成
 - [character-preview.html](file:///s:/work/ai-beachvolley/character-preview.html): キャラクタースプライトのアニメーションプレビュー
+- `assets/avatars/`: フォルダ毎に管理される複数キャラアバター定義と画像アセット
+- `assets/avatar-templates/`: AI画像生成用の42モーション小分けテンプレート群
 - `assets/`: キャラクタースプライト、背景、アート設定ドキュメント
