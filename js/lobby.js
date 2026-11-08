@@ -75,7 +75,7 @@
     const coralBanner = document.createElement('div');
     coralBanner.className = 'team-side-banner team-coral-banner';
     coralBanner.setAttribute('aria-hidden', 'true');
-    coralBanner.innerHTML = '<span class="team-banner-label">コーラルチーム</span>';
+    coralBanner.innerHTML = '<span class="team-banner-label">CORAL TEAM</span>';
 
     const coralCards = document.createElement('div');
     coralCards.className = 'team-cards-group coral-cards-group';
@@ -91,7 +91,7 @@
     const blueBanner = document.createElement('div');
     blueBanner.className = 'team-side-banner team-blue-banner';
     blueBanner.setAttribute('aria-hidden', 'true');
-    blueBanner.innerHTML = '<span class="team-banner-label">ブルーチーム</span>';
+    blueBanner.innerHTML = '<span class="team-banner-label">BLUE TEAM</span>';
 
     names.forEach((name, index) => {
       const mine = online ? !!self && owners[index] === self : !participant && owners[index] === 1;
@@ -102,7 +102,7 @@
       title.className = 'sr-only';
       title.textContent = name;
       const marker = document.createElement('span'); marker.className = 'player-you-marker';
-      marker.textContent = mine ? '▼ あなた' : '';
+      marker.textContent = mine ? '▼ YOU' : '';
       marker.setAttribute('aria-hidden', String(!mine));
       const art = document.createElement('div'); art.className = 'character-portrait';
       const avatar = window.avatarManager?.getPlayerAvatar(index);

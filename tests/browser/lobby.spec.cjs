@@ -51,7 +51,7 @@ test('invitation view only permits joining and keeps setup under host control', 
   await expect(page.locator('#player-slots')).toBeVisible();
   await expect(page.locator('#player-slots .is-you')).toHaveCount(1);
   await expect(page.locator('#player-slots .is-you strong')).toHaveText('ブルー / 男性');
-  await expect(page.locator('#player-slots .is-you .player-you-marker')).toHaveText('▼ あなた');
+  await expect(page.locator('#player-slots .is-you .player-you-marker')).toHaveText('▼ YOU');
   await expect(page.locator('#player-slots .is-you .player-owner')).toContainText('2P（あなた）');
   await page.locator('#lobby').screenshot({path:'test-results/join-your-character.png'});
   // Host reassignment updates the highlight immediately; unassigned guests see spectator status.

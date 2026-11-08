@@ -896,32 +896,41 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  min-width: 32px;
+  width: 36px;
+  min-width: 36px;
   border-radius: 6px;
   padding: 10px 4px;
   box-sizing: border-box;
   user-select: none;
   box-shadow: 0 2px 5px rgba(16, 47, 67, 0.12);
+  position: relative;
+  overflow: hidden;
 }
 .team-coral-banner {
   background: linear-gradient(180deg, #f08359, #cf552c);
   border: 1px solid #b3421d;
   color: #ffffff;
 }
+.team-coral-banner .team-banner-label {
+  transform: rotate(-90deg);
+}
 .team-blue-banner {
   background: linear-gradient(180deg, #328ca8, #1c617b);
   border: 1px solid #144f65;
   color: #ffffff;
 }
+.team-blue-banner .team-banner-label {
+  transform: rotate(90deg);
+}
 .team-banner-label {
-  writing-mode: vertical-rl;
-  text-orientation: upright;
+  display: block;
+  white-space: nowrap;
   font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.25em;
+  font-weight: 900;
+  letter-spacing: 0.22em;
   line-height: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
 }
 .team-cards-group {
   display: grid;
@@ -961,8 +970,8 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
 .player-card select { min-width: 0; width: 100%; }
 .player-card > strong { font-size: 13px; line-height: 1.8; }
 .player-card.is-you { border-color: #c6901e; box-shadow: 0 0 0 3px #ffc83d50; background: linear-gradient(180deg, #fff0b7, #fffdf7 85%); }
-.player-you-marker { min-height: 22px; margin-bottom: 6px; text-align: center; font-size: 11px; font-weight: 700; line-height: 22px; }
-.is-you .player-you-marker { color: #ffe38c; background: var(--navy); border-radius: 4px; }
+.player-you-marker { min-height: 22px; margin-bottom: 6px; text-align: center; font-size: 11.5px; font-weight: 800; line-height: 22px; letter-spacing: 0.08em; }
+.is-you .player-you-marker { color: var(--navy); background: transparent; border-radius: 0; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85); }
 .player-card .player-owner { margin: 0; padding: 9px 5px; min-height: 42px; font-size: 12px; line-height: 1.8; text-align: center; overflow-wrap: anywhere; border-radius: 4px; background: #102f430a; }
 .player-card.is-you .player-owner { font-weight: 700; color: var(--navy); background: #ffe6a2; }
 .team-blue { border-top-color: var(--blue); background: linear-gradient(180deg, #e2f4f8, #fffdf7 80%); }
@@ -1009,11 +1018,11 @@ dialog small { display: block; font-size: 11px; line-height: 1.9; }
   }
   .team-blue-banner { order: 4; width: 100%; min-width: 0; padding: 5px 12px; height: auto; }
   .blue-cards-group { order: 5; gap: 8px; }
-  .team-banner-label {
-    writing-mode: horizontal-tb;
-    text-orientation: mixed;
-    font-size: 12px;
-    letter-spacing: 0.12em;
+  .team-coral-banner .team-banner-label,
+  .team-blue-banner .team-banner-label {
+    transform: none;
+    font-size: 11.5px;
+    letter-spacing: 0.15em;
   }
   .player-card { padding: 8px; }
   .player-card select { padding: 8px 4px; font-size: 12px; }
