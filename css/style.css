@@ -893,10 +893,6 @@ input, select { color: var(--ink); background: white; border: 1px solid #16465a4
 .avatar-toggle-btn:active:not(:disabled) { transform: translateY(1px); }
 .avatar-tag { color: #7b8e96; font-size: 10px; }
 .avatar-current-name { max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
-.avatar-manager-bar { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 10px 0 14px; padding: 8px 12px; background: #102f4308; border-radius: 6px; flex-wrap: wrap; }
-.avatar-import-btn { font-size: 11.5px; padding: 6px 14px; color: var(--navy); background: #ffffff; border: 1px solid #16465a3a; border-radius: 4px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.06); transition: all 0.15s; }
-.avatar-import-btn:hover { background: #f7fafc; border-color: var(--navy); }
-.avatar-import-status { font-size: 11px; color: #2b5569; }
 .launch-match { background: #e5784f; border: 1px solid #9c482b; color: #fff; padding: 16px 26px; margin-bottom: 16px; box-shadow: 0 4px 0 #9c482b; }
 .launch-match:not(:disabled):hover { background: #f58b62; border-color: #9c482b; color: white; box-shadow: 0 5px 0 #9c482b; }
 button:disabled, button:disabled:hover, button.active:disabled { cursor: not-allowed; opacity: 1; color: #87979e; background: #e5ebed; border-color: #c6d1d6; box-shadow: none; transform: none; transition: none; }

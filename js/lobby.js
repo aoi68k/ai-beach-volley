@@ -139,10 +139,6 @@
     });
     $('local-mode').disabled = online || participant;
     $('host-room').disabled = online || participant;
-    const importBtnEl = $('import-avatar-btn');
-    if (importBtnEl) importBtnEl.hidden = participant;
-    const importBarEl = document.querySelector('.avatar-manager-bar');
-    if (importBarEl) importBarEl.hidden = participant;
     $('join-room').disabled = online;
     $('join-room').textContent = (online && guest && !room) ? '接続中…' : '参加する';
     $('launch-match').disabled = participant || (online && !room) || playing;
@@ -761,32 +757,6 @@
     playing = true; game.start(); $('lobby').close(); $('game').focus(); if (online) { sync(); broadcast({ type: 'start' }); }
   };
 
-  const importBtn = $('import-avatar-btn');
-  const folderInput = $('avatar-folder-input');
-  const importStatus = $('avatar-import-status');
-  if (importBtn && folderInput) {
-    importBtn.onclick = () => {
-      window.rallyAudio?.play('uiConfirm');
-      folderInput.click();
-    };
-    folderInput.onchange = async (e) => {
-      const files = e.target.files;
-      if (!files || !files.length) return;
-      try {
-        if (importStatus) importStatus.textContent = '⏳ アバター読み込み中…';
-        const imported = await window.avatarManager.importFromFiles(files);
-        if (imported) {
-          window.rallyAudio?.play('uiConfirm');
-          if (importStatus) importStatus.textContent = `✅ アバター「${imported.name}」を追加しました！`;
-          window.avatarManager.setPlayerAvatar(0, imported.id);
-          render();
-        }
-      } catch (err) {
-        window.rallyAudio?.play('uiCancel');
-        if (importStatus) importStatus.textContent = `⚠️ エラー: ${err.message}`;
-      }
-    };
-  }
   window.avatarManager?.onChange(render);
 
   render();

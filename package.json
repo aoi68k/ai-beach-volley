@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prestart": "node scripts/generate-manifest.cjs",
     "start": "node scripts/serve.cjs",
+    "pretest": "node scripts/generate-manifest.cjs",
     "test": "node tests/animation.test.cjs && node tests/network.test.cjs && node tests/gamepad-config.test.cjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "build": "node scripts/generate-manifest.cjs"
   },
-  "devDependencies": { "@playwright/test": "1.56.1" }
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
 }

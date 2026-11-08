@@ -5,28 +5,33 @@
     "type": "builtin"
   },
   {
-    "id": "chen",
-    "name": "chen",
-    "folder": "chen"
-  },
-  {
-    "id": "coral-split",
-    "name": "コーラル男性 (小分け)",
-    "folder": "coral-split"
-  },
-  {
-    "id": "coral-female-split",
-    "name": "コーラル女性 (小分け)",
-    "folder": "coral-female-split"
+    "id": "blue-female-split",
+    "name": "ブルー女性 (小分け)",
+    "folder": "blue-female-split",
+    "type": "split"
   },
   {
     "id": "blue-male-split",
     "name": "ブルー男性 (小分け)",
-    "folder": "blue-male-split"
+    "folder": "blue-male-split",
+    "type": "split"
   },
   {
-    "id": "blue-female-split",
-    "name": "ブルー女性 (小分け)",
-    "folder": "blue-female-split"
+    "id": "chen",
+    "name": "chen",
+    "folder": "chen",
+    "type": "split"
+  },
+  {
+    "id": "coral-female-split",
+    "name": "コーラル女性 (小分け)",
+    "folder": "coral-female-split",
+    "type": "split"
+  },
+  {
+    "id": "coral-split",
+    "name": "コーラル男性 (小分け)",
+    "folder": "coral-split",
+    "type": "split"
   }
 ]

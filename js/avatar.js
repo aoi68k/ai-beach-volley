@@ -207,7 +207,7 @@
 
     async init() {
       try {
-        const resp = await fetch('assets/avatars/manifest.json');
+        const resp = await fetch(`assets/avatars/manifest.json?_t=${Date.now()}`);
         if (resp.ok) {
           const manifest = await resp.json();
           for (const item of manifest) {
@@ -225,7 +225,7 @@
     async loadAvatarFolder(folderName, metaHint = {}) {
       const folderPath = `assets/avatars/${folderName}`;
       try {
-        const jsonResp = await fetch(`${folderPath}/avatar.json`);
+        const jsonResp = await fetch(`${folderPath}/avatar.json?_t=${Date.now()}`);
         if (jsonResp.ok) {
           const config = await jsonResp.json();
           config.folder = folderPath;

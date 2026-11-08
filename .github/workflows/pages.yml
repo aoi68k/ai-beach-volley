@@ -26,6 +26,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: Prepare public files
         run: |
+          node scripts/generate-manifest.cjs
           mkdir _site
           cp index.html character-preview.html invite.html _site/
           cp -r assets vendor js css _site/
