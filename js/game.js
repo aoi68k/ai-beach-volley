@@ -14,7 +14,7 @@ const beachArt = loadImage('assets/tropical-beach.png');
 const ballArt = loadImage('assets/volleyball-ball-v1.png');
 const attackSwooshArt = loadImage('assets/effects/attack-swoosh-v1.png');
 const playerArt = loadImage('assets/volleyball-players-v2.png');
-const blockArt = loadImage('assets/characters/block-v1.png');
+const blockArt = loadImage('assets/characters/block-v2.png');
 const tossHitArt = loadImage('assets/characters/toss-hit-v2.png');
 const receiveHitArt = loadImage('assets/characters/receive-hit-v1.png');
 const serveArt = loadImage('assets/characters/serve-v1.png');
@@ -23,6 +23,7 @@ const SERVE_SPRITE_SIZE = 132;
 const RECEIVE_HIT_BASELINES = [606, 607, 605, 605].map(y => y / 627);
 const flyingReceiveArt = loadImage('assets/characters/flying-receive-v1.png');
 const TOSS_HIT_BASELINES = [589, 589, 624, 625].map(y => y / 627);
+const BLOCK_BASELINES = [[355, 355, 355], [352, 353, 353], [354, 355, 355], [353, 353, 353]].map(row => row.map(y => y / 362));
 const animatedPlayerArt = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-v3.png`));
 const selectedRunArt = CHARACTER_NAMES.map(name => loadImage(`assets/characters/${name}-run-selected.png`));
 
@@ -200,6 +201,9 @@ let ball;
 let score = [0, 0];
 let running = false;
 let characterCheck = false;
+let checkMode = 'free'; // 'free' | 'serve' | 'receive'
+let checkBallResetTimer = 0;
+let checkIncomingLabel = '';
 let serveState = null;
 let serveTurns = [0, 0];
 let checkBallSide = 0;
@@ -247,6 +251,37 @@ function syncModeButtons() {
   if (checkButton) {
     checkButton.classList.toggle('active', characterCheck);
     checkButton.ariaPressed = String(characterCheck);
+  }
+  syncCheckModeUI();
+}
+
+function syncCheckModeUI() {
+  const groups = [
+    getArenaElement('#arena-check-modes'),
+    getArenaElement('#stage-check-modes'),
+    document.querySelector('#character-check-modes')
+  ];
+  for (const group of groups) {
+    if (!group) continue;
+    group.hidden = !characterCheck;
+    if (characterCheck) {
+      group.querySelectorAll('[data-check-mode]').forEach(btn => {
+        const active = btn.getAttribute('data-check-mode') === checkMode;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+    }
+  }
+}
+
+function setCheckMode(nextMode) {
+  if (nextMode !== 'free' && nextMode !== 'serve' && nextMode !== 'receive') return;
+  checkMode = nextMode;
+  checkBallResetTimer = 0;
+  checkIncomingLabel = '';
+  syncCheckModeUI();
+  if (characterCheck) {
+    initCurrentCheckMode();
   }
 }
 
@@ -314,6 +349,9 @@ function createPlayer(x, index) {
 function reset() {
   serveTurns = [0, 0];
   characterCheck = false;
+  checkMode = 'free';
+  checkBallResetTimer = 0;
+  checkIncomingLabel = '';
   checkGaugeTime = 0;
   const exitCheck = getArenaElement('#exit-character-check');
   if (exitCheck) exitCheck.hidden = true;
@@ -331,6 +369,7 @@ function reset() {
   setOverlay('LET’S RALLY.', 'キャラの操作担当を決めて、砂浜へ。', 'PLAYER SETUP ', true);
   status();
   syncModeButtons();
+  syncCheckModeUI();
 }
 
 function status() {
@@ -338,7 +377,13 @@ function status() {
   if (!el) return;
   el.textContent = paused
     ? (window.matchLobby?.online ? 'PAUSED / ホストのSPACEで再開' : 'PAUSED / SPACEで再開')
-    : characterCheck ? 'キャラ挙動チェック / 通常操作・A ショット・B トス / R でリセット'
+    : characterCheck ? (
+        checkMode === 'serve'
+          ? `キャラ挙動チェック [サーブ練習] / ${serveState?.phase === 'holding' ? 'A:トス・B:地上サーブ / ↓+A:パワー' : '↑:ジャンプ・A:打球'} / R:即時リセット / 1-3:切替`
+          : checkMode === 'receive'
+          ? `キャラ挙動チェック [レシーブ練習: ${checkIncomingLabel || '飛来中'}] / A:レシーブ・B:トス / R:次の球 / 1-3:切替`
+          : 'キャラ挙動チェック [フリー練習] / 中央から打ち上げ / A:ショット・B:トス / R:リセット / 1-3:切替'
+      )
     : serveState ? `${players[serveState.serverIndex].side ? 'BLUE' : 'CORAL'} サーブ / ${serveState.phase === 'holding' ? 'Aでトス・Bで地上サーブ' : '↑でジャンプ・Aで打つ'}`
     : window.matchLobby?.online ? 'ONLINE / ホスト: SPACEで一時停止・Rでロビー / 先に11点で勝利' : '先に11点で勝利';
 }
@@ -676,37 +721,32 @@ if (typeof window !== 'undefined') {
   };
 }
 
-function startCharacterCheck() {
+function startCharacterCheck(initialMode = checkMode || 'free') {
   if (window.matchLobby?.online) return;
   reset();
   characterCheck = true;
+  checkMode = (initialMode === 'serve' || initialMode === 'receive') ? initialMode : 'free';
   players = [createPlayer(NET - 100, 0)];
   players[0].human = 1;
   checkBallSide = 0;
-  launchCheckBall();
   running = true;
   keys.clear();
-  document.querySelector('#overlay').classList.add('hidden');
-  document.querySelector('#exit-character-check').hidden = false;
+  const overlay = getArenaElement('#overlay');
+  if (overlay) overlay.classList.add('hidden');
+  const exitCheck = getArenaElement('#exit-character-check');
+  if (exitCheck) exitCheck.hidden = false;
   window.rallyAudio?.unlock();
-  updateCamera(0, true);
-  status();
+  initCurrentCheckMode();
+  syncCheckModeUI();
   syncModeButtons();
   canvas.focus?.();
 }
 
 function launchCheckBall() {
-  serve(0);
-  ball.x = NET + (checkBallSide ? 42 : -42);
-  ball.y = FLOOR - ball.r;
-  ball.vx = 0;
-  ball.vy = -620;
-  // Alternate sides of the net so both tosses and airborne blocks can be checked.
-  checkBallSide = 1 - checkBallSide;
-  serveTimer = 0;
+  launchCheckBallFree();
 }
 
-document.querySelector('#character-check').onclick = startCharacterCheck;
+document.querySelector('#character-check').onclick = () => startCharacterCheck();
 document.querySelector('#exit-character-check').onclick = () => { reset(); window.matchLobby?.show(); };
 
 function serve(side) {
@@ -741,7 +781,7 @@ function serve(side) {
 
 function beginServe(side) {
   serve(side);
-  const serverIndex = side * 2 + (serveTurns[side]++ % 2);
+  const serverIndex = characterCheck ? 0 : side * 2 + (serveTurns[side]++ % 2);
   const server = players[serverIndex];
   Object.assign(server, { x: side ? W - 28 : 28, y: FLOOR, vx: 0, vy: 0,
     action: null, actionFrames: 0, cooldownFrames: 0, recoveryFrames: 0, blockFrames: 0,
@@ -774,6 +814,197 @@ function serveVelocity(b, side, variant) {
     / (GRAVITY * fraction * (1 - fraction))));
   return { vx: (target - b.x) / duration,
     vy: (endY - b.y - .5 * GRAVITY * duration * duration) / duration };
+}
+
+// Practical incoming ball trajectories from the opponent court (Blue side) for character check receive mode.
+const CHECK_RECEIVE_BALLS = [
+  {
+    name: '通常サーブ',
+    spawn: () => {
+      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
+      const vel = serveVelocity(b, 1, 'normal');
+      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'normal' };
+    }
+  },
+  {
+    name: '高速サーブ',
+    spawn: () => {
+      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
+      const vel = serveVelocity(b, 1, 'fast');
+      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'fast' };
+    }
+  },
+  {
+    name: '高弾道サーブ',
+    spawn: () => {
+      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
+      const vel = serveVelocity(b, 1, 'high');
+      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'high' };
+    }
+  },
+  {
+    name: 'チェンジアップサーブ',
+    spawn: () => {
+      const b = { x: W - 28, y: FLOOR - 64 * SERVE_SPRITE_SIZE / 104, r: 12 };
+      const vel = serveVelocity(b, 1, 'slow');
+      return { x: b.x, y: b.y, vx: vel.vx, vy: vel.vy, serveVariant: 'slow' };
+    }
+  },
+  {
+    name: 'パワーサーブ',
+    spawn: () => {
+      const b = { x: W - 110, y: 340, r: 12 };
+      const vel = serveVelocity(b, 1, 'power');
+      return {
+        x: b.x, y: b.y, vx: vel.vx * 1.05, vy: vel.vy * 0.95,
+        serveVariant: 'power', specialShot: 'powerServe'
+      };
+    }
+  },
+  {
+    name: '強打スパイク',
+    spawn: () => ({
+      x: NET + 110,
+      y: 290,
+      vx: -480,
+      vy: 110,
+      serveVariant: null
+    })
+  },
+  {
+    name: '奥狙いスパイク',
+    spawn: () => ({
+      x: NET + 130,
+      y: 270,
+      vx: -540,
+      vy: -20,
+      serveVariant: null
+    })
+  },
+  {
+    name: '手前フェイント',
+    spawn: () => ({
+      x: NET + 70,
+      y: 260,
+      vx: -230,
+      vy: -210,
+      feintDrive: 1,
+      serveVariant: null
+    })
+  },
+  {
+    name: '山なりループ球',
+    spawn: () => ({
+      x: NET + 220,
+      y: 350,
+      vx: -330,
+      vy: -380,
+      serveVariant: null
+    })
+  }
+];
+
+function initCurrentCheckMode() {
+  checkBallResetTimer = 0;
+  if (!characterCheck || !players[0]) return;
+  const p = players[0];
+  p.vx = 0;
+  p.vy = 0;
+  p.action = null;
+  p.actionFrames = 0;
+  p.cooldownFrames = 0;
+  p.recoveryFrames = 0;
+  p.blockFrames = 0;
+  p.knockback = 0;
+  p.landTime = 0;
+  p.airborneTouch = false;
+  p.airborneActionTaken = false;
+  p.airborneShotHeld = false;
+  p.attackReady = false;
+  p.setReady = false;
+  p.receiveReady = false;
+
+  if (checkMode === 'serve') {
+    setupCheckServe();
+  } else if (checkMode === 'receive') {
+    p.x = 320;
+    p.y = FLOOR;
+    launchCheckBallReceive();
+  } else {
+    serveState = null;
+    p.x = NET - 100;
+    p.y = FLOOR;
+    launchCheckBallFree();
+  }
+  updateCamera(0, true);
+  status();
+}
+
+function setupCheckServe() {
+  serveState = null;
+  const p = players[0];
+  if (!p) return;
+  p.x = 28;
+  p.y = FLOOR;
+  p.vx = 0;
+  p.vy = 0;
+  p.action = null;
+  p.specials = Math.max(3, p.specials);
+  serveTurns[0] = 0;
+  checkIncomingLabel = '';
+  beginServe(0);
+}
+
+function launchCheckBallFree() {
+  serve(0);
+  ball.x = NET + (checkBallSide ? 42 : -42);
+  ball.y = FLOOR - ball.r;
+  ball.vx = 0;
+  ball.vy = -620;
+  checkBallSide = 1 - checkBallSide;
+  serveTimer = 0;
+  checkIncomingLabel = '';
+  status();
+}
+
+function launchCheckBallReceive() {
+  serve(1);
+  const pattern = CHECK_RECEIVE_BALLS[Math.floor(Math.random() * CHECK_RECEIVE_BALLS.length)];
+  const spawned = pattern.spawn();
+  ball.x = spawned.x;
+  ball.y = spawned.y;
+  ball.vx = spawned.vx;
+  ball.vy = spawned.vy;
+  ball.serveVariant = spawned.serveVariant ?? null;
+  ball.specialShot = spawned.specialShot ?? null;
+  ball.feintDrive = spawned.feintDrive ?? 0;
+  ball.trail = [];
+  ball.lastSide = 1;
+  ball.lastHitter = null;
+  ball.touchSide = null;
+  ball.teamTouches = 0;
+  serveTimer = 0;
+  serveState = null;
+  checkIncomingLabel = pattern.name;
+  if (ball.specialShot === 'powerServe') {
+    playSfx('empowered');
+  } else {
+    playSfx('serve');
+  }
+  status();
+}
+
+function handleCheckBallFloor() {
+  if (checkBallResetTimer > 0) return;
+  ball.y = FLOOR - ball.r;
+  ball.vx = 0;
+  ball.vy = 0;
+  playSfx('sand');
+  if (checkMode === 'free') {
+    launchCheckBallFree();
+  } else {
+    checkBallResetTimer = 0.45;
+  }
 }
 
 function strikeServe(p, airborne, input = {}) {
@@ -909,14 +1140,26 @@ window.addEventListener('keydown', e => {
     window.matchLobby.command(e.code);
     return;
   }
+  if (characterCheck && !e.repeat) {
+    if (e.code === 'Digit1') { setCheckMode('free'); return; }
+    if (e.code === 'Digit2') { setCheckMode('serve'); return; }
+    if (e.code === 'Digit3') { setCheckMode('receive'); return; }
+  }
   if (e.code === 'Space' && running) {
     paused = !paused;
     status();
   }
   if (e.code === 'KeyR') {
-    if (characterCheck) startCharacterCheck();
+    if (characterCheck) startCharacterCheck(checkMode);
     else { reset(); window.matchLobby?.show(); }
   }
+});
+
+document.addEventListener?.('click', e => {
+  const btn = e.target?.closest?.('[data-check-mode]');
+  if (!btn) return;
+  const targetMode = btn.getAttribute('data-check-mode');
+  if (targetMode) setCheckMode(targetMode);
 });
 
 window.addEventListener('keyup', e => keys.delete(e.code));
@@ -2005,7 +2248,7 @@ function updateBall(dt) {
 
   if (ball.y + ball.r >= FLOOR) {
     if (characterCheck) {
-      launchCheckBall();
+      handleCheckBallFloor();
       return;
     }
     const side = ball.x < NET ? 1 : 0;
@@ -2065,6 +2308,14 @@ function update(dt) {
     while (checkGaugeTime >= 1 - 1e-9) {
       checkGaugeTime = Math.max(0, checkGaugeTime - 1);
       for (const p of players) addGauge(p, 2);
+    }
+    if (checkBallResetTimer > 0) {
+      checkBallResetTimer -= dt;
+      if (checkBallResetTimer <= 0) {
+        checkBallResetTimer = 0;
+        if (checkMode === 'serve') setupCheckServe();
+        else if (checkMode === 'receive') launchCheckBallReceive();
+      }
     }
   }
 
@@ -2428,8 +2679,11 @@ function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor 
   } else if (pose.block) {
     if (blockArt.complete && blockArt.naturalWidth) {
       art = blockArt;
+      columns = 3;
       row = athlete;
-      baseline = 250;
+      frame = pose.frame - 2;
+      baseline = BLOCK_BASELINES[athlete][frame] * 256;
+      size = 120;
     } else if (playerArt.complete && playerArt.naturalWidth) {
       art = playerArt;
       row = athlete;
@@ -2488,7 +2742,11 @@ function drawPlayerSprite(p, customX = p.x, customY = p.y, alpha = 1, glowColor 
 
 // --- Camera & Scene Rendering ---
 function updateCamera(dt, snap = false) {
-  const target = characterCheck ? players[0] : ball;
+  const target = characterCheck
+    ? (checkMode === 'receive' && ball && ball.x > NET
+        ? { x: players[0].x * 0.65 + ball.x * 0.35, y: Math.min(players[0].y, ball.y + 60) }
+        : players[0])
+    : ball;
   const visibleW = VIEW_W / camera.zoom;
   const visibleH = H / camera.zoom;
   const edgePadding = serveState ? 16 : 0;
@@ -3661,9 +3919,14 @@ window.rallyGame = {
   testSetBall(props) {
     if (ball && props) Object.assign(ball, props);
   },
+  characterCheckActive() { return characterCheck; },
+  getCheckMode() { return checkMode; },
+  setCheckMode(targetMode) { setCheckMode(targetMode); },
+  startCharacterCheck(targetMode) { startCharacterCheck(targetMode); },
   snapshot() {
     return { players, ball: ball ? { ...ball, lastHitter: ball.lastHitter ? (ball.lastHitter.index ?? players.indexOf(ball.lastHitter)) : -1, trail: [] } : null,
       score, running, paused, winner, serveTimer, serveState, serveTurns, time, shake, pointEnd, audioEvents,
+      characterCheck, checkMode, checkIncomingLabel, checkBallResetTimer,
       specialActivation: specialActivation ? { ...specialActivation, player: undefined } : null };
   },
   apply(s) {

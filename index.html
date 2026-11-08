@@ -56,6 +56,12 @@
       <div class="arena-top">
         <span><i></i> LIVE FROM SUNSET BEACH</span>
         <div class="arena-top-actions">
+          <div id="arena-check-modes" class="arena-check-modes" hidden>
+            <span class="arena-check-label">練習:</span>
+            <button type="button" class="arena-check-btn active" data-check-mode="free">フリー</button>
+            <button type="button" class="arena-check-btn" data-check-mode="serve">サーブ</button>
+            <button type="button" class="arena-check-btn" data-check-mode="receive">レシーブ</button>
+          </div>
           <span id="status">先に11点で勝利</span>
           <button id="toggle-popout" class="fullscreen-btn popout-btn" type="button" aria-label="ゲーム画面をポップアウト" title="ゲーム画面を別ウィンドウで表示 (P)">
             <svg class="icon-popout" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -78,6 +84,12 @@
       </div>
       <div class="arena-stage" id="arena-stage">
         <canvas id="game" tabindex="-1" width="1200" height="620" aria-label="2対2のビーチバレーゲーム"></canvas>
+        <div id="stage-check-modes" class="stage-check-modes" hidden>
+          <span class="stage-check-label">練習:</span>
+          <button type="button" class="stage-check-btn active" data-check-mode="free">フリー</button>
+          <button type="button" class="stage-check-btn" data-check-mode="serve">サーブ</button>
+          <button type="button" class="stage-check-btn" data-check-mode="receive">レシーブ</button>
+        </div>
         <div id="touch-controls" class="touch-controls" aria-label="オンスクリーンコントローラー" hidden>
           <div class="touch-toggle" id="touch-toggle">
             <label class="touch-toggle-label" for="toggle-touch-pad">
@@ -206,6 +218,12 @@
         <div class="setting-actions">
           <button id="open-gamepad-config" class="config-btn">GAMEPAD CONFIG / ボタン設定 ↗</button>
           <button id="character-check" class="check-btn">CHARACTER CHECK / キャラ挙動チェック ↗</button>
+          <div id="character-check-modes" class="check-mode-group" hidden>
+            <span class="check-mode-title">練習モード:</span>
+            <button type="button" class="check-mode-btn active" data-check-mode="free">フリー</button>
+            <button type="button" class="check-mode-btn" data-check-mode="serve">サーブ</button>
+            <button type="button" class="check-mode-btn" data-check-mode="receive">レシーブ</button>
+          </div>
           <button id="exit-character-check" class="exit-btn" hidden>試合の設定に戻る</button>
         </div>
         <p class="hint">コントローラーの割り当て（1P〜4P）やボタン設定、1人で通常の打球やジャンプの操作を確認できる練習モードを利用できます。</p>

@@ -847,6 +847,106 @@ test('solo character check: movement, jumping, pause, reset and exit', async ({ 
   expect((await state()).ball).not.toBeNull();
   expect(errors).toEqual([]);
 });
+
+test('character check: switch modes (free, serve, receive) via UI and keyboard', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+
+  // Launch character check
+  await page.locator('#character-check').click();
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.locator('#arena-check-modes')).toBeVisible();
+  await expect(page.locator('#character-check-modes')).toBeVisible();
+
+  const state = () => page.evaluate(() => window.rallyGame.snapshot());
+
+  // 1. Default is free mode
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('free');
+  await expect(page.locator('#arena-check-modes [data-check-mode="free"]')).toHaveClass(/active/);
+  await expect(page.locator('#status')).toContainText('フリー練習');
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/check-mode-free.png' });
+
+  // 2. Switch to serve mode via UI button
+  await page.locator('#arena-check-modes [data-check-mode="serve"]').click();
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('serve');
+  await expect(page.locator('#arena-check-modes [data-check-mode="serve"]')).toHaveClass(/active/);
+  await expect(page.locator('#character-check-modes [data-check-mode="serve"]')).toHaveClass(/active/);
+  await expect(page.locator('#status')).toContainText('サーブ練習');
+  const serveSnapshot = await state();
+  expect(serveSnapshot.serveState).not.toBeNull();
+  expect(serveSnapshot.serveState.phase).toBe('holding');
+  expect(serveSnapshot.players[0].x).toBe(28);
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/check-mode-serve.png' });
+
+  // 3. Switch to receive mode via keyboard Digit3
+  await page.keyboard.press('Digit3');
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('receive');
+  await expect(page.locator('#arena-check-modes [data-check-mode="receive"]')).toHaveClass(/active/);
+  await expect(page.locator('#character-check-modes [data-check-mode="receive"]')).toHaveClass(/active/);
+  await expect(page.locator('#status')).toContainText('レシーブ練習');
+  const receiveSnapshot = await state();
+  expect(receiveSnapshot.ball.vx).toBeLessThan(0); // incoming from opponent court
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/check-mode-receive.png' });
+
+  // 4. Switch back to free mode via keyboard Digit1
+  await page.keyboard.press('Digit1');
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('free');
+  await expect(page.locator('#arena-check-modes [data-check-mode="free"]')).toHaveClass(/active/);
+  await expect(page.locator('#status')).toContainText('フリー練習');
+
+  // 5. Exit character check hides mode switchers
+  await page.locator('#exit-character-check').click();
+  await expect(page.locator('#arena-check-modes')).toBeHidden();
+  await expect(page.locator('#character-check-modes')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('character check: serve practice and receive practice reset cycle', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+
+  // Launch and set to serve practice
+  await page.locator('#character-check').click();
+  await page.keyboard.press('Digit2');
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('serve');
+
+  const state = () => page.evaluate(() => window.rallyGame.snapshot());
+  let s = await state();
+  expect(s.serveState.phase).toBe('holding');
+
+  // Standing serve with KeyX (B button held until strike)
+  await page.keyboard.down('KeyX');
+  await expect.poll(async () => (await state()).serveState).toBeNull();
+  await page.keyboard.up('KeyX');
+
+  // After ball hits the floor, serve resets automatically
+  await expect.poll(async () => {
+    const snap = await state();
+    return snap.serveState?.phase;
+  }, { timeout: 6000 }).toBe('holding');
+
+  // KeyR resets immediately
+  await page.keyboard.press('KeyR');
+  s = await state();
+  expect(s.serveState.phase).toBe('holding');
+  expect(s.players[0].x).toBe(28);
+
+  // Switch to receive practice
+  await page.keyboard.press('Digit3');
+  expect(await page.evaluate(() => window.rallyGame.getCheckMode())).toBe('receive');
+  const firstBallX = (await state()).ball.x;
+
+  // Press KeyR to immediately spawn next ball
+  await page.keyboard.press('KeyR');
+  const secondSnap = await state();
+  expect(secondSnap.checkMode).toBe('receive');
+  expect(secondSnap.ball.vx).toBeLessThan(0);
+
+  await page.locator('#exit-character-check').click();
+  expect(errors).toEqual([]);
+});
 test('local setup is required, unique assignments, movement and restart', async ({ page }) => {
   await page.goto('/'); await page.locator('#start').click();
   await expect(page.locator('#lobby')).toBeVisible();
