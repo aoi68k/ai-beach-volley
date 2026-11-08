@@ -88,13 +88,88 @@
       color: white;
     }
 
-    canvas {
+    canvas#preview {
       width: 100%;
+      height: auto !important;
+      aspect-ratio: auto !important;
+      object-fit: unset !important;
+      contain: unset !important;
       display: block;
       background: #e6f0ee;
       border-radius: 8px;
       border: 1px solid #16465a60;
       image-rendering: pixelated;
+      transition: max-width 0.2s ease;
+    }
+
+    .canvas-container {
+      width: 100%;
+      overflow-x: auto;
+      margin: 6px 0 16px;
+    }
+
+    .action-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0 14px;
+    }
+
+    .tab-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid #16465a33;
+      background: #f0f7f6;
+      color: #143b49;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .tab-btn:hover {
+      background: #d8eeeb;
+      border-color: #126f87;
+    }
+
+    .tab-btn.active {
+      background: #126f87;
+      color: #ffffff;
+      border-color: #0b4e60;
+      box-shadow: 0 2px 6px rgba(18, 111, 135, 0.35);
+    }
+
+    .tab-btn .badge {
+      font-size: 10px;
+      opacity: 0.75;
+      background: rgba(0, 0, 0, 0.1);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .tab-btn.active .badge {
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+    }
+
+    .tab-btn.all-tab {
+      margin-left: auto;
+      background: #e2ecf0;
+      border-color: #a0c2cd;
+    }
+
+    .tab-btn.all-tab.active {
+      background: #0f3d4d;
+      color: #fff;
+    }
+
+    .row-nav-group {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
     }
 
     .hint {
@@ -129,11 +204,13 @@
       <button id="play" title="Spaceキーでも切替可">一時停止</button>
       <button id="step-back" title="←キー または Aキー">◀ 1コマ戻る</button>
       <button id="step" title="→キー または Dキー">1コマ進む ▶</button>
+      <div class="row-nav-group">
+        <button id="prev-row" type="button" title="前の動作 (↑キー / Wキー)">◀ 前の動作</button>
+        <button id="next-row" type="button" title="次の動作 (↓キー / Sキー)">次の動作 ▶</button>
+      </div>
       <label>
-        移動:
-        <select id="jump-row">
-          <option value="">行へジャンプ…</option>
-        </select>
+        動作:
+        <select id="jump-row"></select>
       </label>
       <label>
         再生速度
@@ -142,6 +219,14 @@
           <option value=".5">0.5倍</option>
           <option value="1" selected>1倍</option>
           <option value="2">2倍</option>
+        </select>
+      </label>
+      <label>
+        表示倍率
+        <select id="zoom">
+          <option value="1" selected>標準 (100%)</option>
+          <option value="1.25">拡大 (125%)</option>
+          <option value="1.5">大 (150%)</option>
         </select>
       </label>
       <label>
@@ -156,17 +241,21 @@
         </select>
       </label>
       <div class="key-hints">
-        <kbd>Space</kbd> 停止/再生 · <kbd>←</kbd> <kbd>→</kbd> コマ送り · <kbd>F</kbd> 反転
+        <kbd>Space</kbd> 停止/再生 · <kbd>←</kbd> <kbd>→</kbd> コマ送り · <kbd>↑</kbd> <kbd>↓</kbd> 動作切替 · <kbd>1</kbd>–<kbd>9</kbd> 動作選択 · <kbd>F</kbd> 反転
       </div>
     </nav>
 
+    <div class="action-tabs" id="action-tabs" role="tablist" aria-label="動作切り替えタブ"></div>
+
     <div id="load-status" role="status">画像を読み込んでいます…</div>
-    <canvas
-      id="preview"
-      width="1040"
-      height="1520"
-      aria-label="4人のキャラクターの待機、走り、アタック、ジャンプ、トス、レシーブ、ブロック、フライングレシーブのアニメーション比較"
-    ></canvas>
+    <div class="canvas-container" id="canvas-container">
+      <canvas
+        id="preview"
+        width="1040"
+        height="240"
+        aria-label="4人のキャラクターのアニメーション比較"
+      ></canvas>
+    </div>
     <p class="hint">
       「1コマ戻る」「1コマ進む」で各中間ポーズを確認できます。先頭から戻ると最後のコマになります。このページでは使用するコマを繰り返し再生します。ブロックは判定中・成功・空振り終了の3つの固定ポーズです。レシーブは構えとヒットの2状態で、ゲーム内では打球時だけヒット姿勢を0.3秒表示します。フライングレシーブは飛び込み→はらばい→起き上がりの3状態です。ゲーム内のジャンプは実際の上昇・下降に同期し、アタックは3コマ目で構え、当たった瞬間から5→6コマ目を1回再生します。
     </p>
@@ -216,7 +305,17 @@
       const flipCheckbox = document.querySelector('#flip');
       const backgroundSelect = document.querySelector('#background');
       const loadStatus = document.querySelector('#load-status');
+      const actionTabs = document.querySelector('#action-tabs');
+      const jumpRowSelect = document.querySelector('#jump-row');
+      const prevRowBtn = document.querySelector('#prev-row');
+      const nextRowBtn = document.querySelector('#next-row');
+      const zoomSelect = document.querySelector('#zoom');
 
+      const SINGLE_HEIGHT = 240;
+      const ALL_HEIGHT = 55 + ACTION_ROWS.length * 160;
+
+      let viewMode = 'single'; // 'single' | 'all'
+      let activeRow = 0; // 0..8
       let playing = true;
       let clock = 0;
       let last = 0;
@@ -225,6 +324,101 @@
       function currentFrames() {
         return ACTION_ROWS.map(row => Math.floor(clock * row.fps) % row.frames);
       }
+
+      function initActionControls() {
+        if (actionTabs) {
+          actionTabs.innerHTML = '';
+          ACTION_ROWS.forEach((r, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tab-btn' + (idx === activeRow && viewMode === 'single' ? ' active' : '');
+            btn.innerHTML = `<span>${r.label.split(' · ')[0]}</span><span class="badge">${idx + 1}</span>`;
+            btn.onclick = () => setRow(idx);
+            actionTabs.append(btn);
+          });
+          const allBtn = document.createElement('button');
+          allBtn.type = 'button';
+          allBtn.className = 'tab-btn all-tab' + (viewMode === 'all' ? ' active' : '');
+          allBtn.innerHTML = `<span>全行一覧</span><span class="badge">0</span>`;
+          allBtn.onclick = () => setRow('all');
+          actionTabs.append(allBtn);
+        }
+
+        if (jumpRowSelect) {
+          jumpRowSelect.innerHTML = '';
+          ACTION_ROWS.forEach((r, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = `${idx + 1}. ${r.label}`;
+            jumpRowSelect.append(opt);
+          });
+          const allOpt = document.createElement('option');
+          allOpt.value = 'all';
+          allOpt.textContent = `全行一覧 (${ACTION_ROWS.length}動作)`;
+          jumpRowSelect.append(allOpt);
+
+          jumpRowSelect.value = viewMode === 'all' ? 'all' : String(activeRow);
+          jumpRowSelect.onchange = () => {
+            setRow(jumpRowSelect.value === 'all' ? 'all' : Number(jumpRowSelect.value));
+          };
+        }
+      }
+
+      function updateTabsUI() {
+        if (actionTabs) {
+          const btns = actionTabs.querySelectorAll('.tab-btn');
+          btns.forEach((btn, idx) => {
+            if (idx < ACTION_ROWS.length) {
+              const active = viewMode === 'single' && idx === activeRow;
+              btn.classList.toggle('active', active);
+            } else {
+              btn.classList.toggle('active', viewMode === 'all');
+            }
+          });
+        }
+        if (jumpRowSelect) {
+          jumpRowSelect.value = viewMode === 'all' ? 'all' : String(activeRow);
+        }
+      }
+
+      function setRow(target) {
+        if (target === 'all') {
+          viewMode = 'all';
+          canvas.height = ALL_HEIGHT;
+        } else {
+          viewMode = 'single';
+          activeRow = (Number(target) + ACTION_ROWS.length) % ACTION_ROWS.length;
+          canvas.height = SINGLE_HEIGHT;
+        }
+        updateTabsUI();
+      }
+
+      function nextRow() {
+        if (viewMode === 'all') setRow(0);
+        else setRow((activeRow + 1) % ACTION_ROWS.length);
+      }
+
+      function prevRow() {
+        if (viewMode === 'all') setRow(ACTION_ROWS.length - 1);
+        else setRow((activeRow - 1 + ACTION_ROWS.length) % ACTION_ROWS.length);
+      }
+
+      if (prevRowBtn) prevRowBtn.onclick = prevRow;
+      if (nextRowBtn) nextRowBtn.onclick = nextRow;
+
+      if (zoomSelect) {
+        zoomSelect.onchange = () => {
+          const z = Number(zoomSelect.value) || 1;
+          if (z === 1) {
+            canvas.style.maxWidth = '100%';
+          } else {
+            canvas.style.maxWidth = `${Math.round(1040 * z)}px`;
+          }
+        };
+      }
+
+      initActionControls();
+      setRow(0);
 
       playButton.onclick = () => {
         if (playing) frozen = currentFrames();
@@ -302,6 +496,17 @@
         last = now;
         if (playing) clock += dt * Number(speedSelect.value);
 
+        // 外部（テスト等）から frozen[r] が直接操作された場合に追従
+        if (!playing && viewMode === 'single') {
+          for (let r = 0; r < ACTION_ROWS.length; r++) {
+            if (frozen[r] !== 0 && activeRow !== r) {
+              activeRow = r;
+              updateTabsUI();
+              break;
+            }
+          }
+        }
+
         ctx.fillStyle = backgroundSelect.value;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.imageSmoothingEnabled = false;
@@ -312,45 +517,51 @@
         CHARACTER_LABELS.forEach((label, i) => ctx.fillText(label, 190 + i * 240, 28));
 
         const activeFrames = currentFrames();
-        for (let row = 0; row < ACTION_ROWS.length; row++) {
-          const y = 55 + row * 160;
-          const rowInfo = ACTION_ROWS[row];
-          const frame = playing ? activeFrames[row] : frozen[row];
+
+        if (viewMode === 'single') {
+          const y = 50;
+          const rowInfo = ACTION_ROWS[activeRow];
+          const frame = playing ? activeFrames[activeRow] : frozen[activeRow];
+
+          ctx.font = 'bold 15px system-ui';
+          ctx.textAlign = 'left';
+          ctx.fillText(rowInfo.label, 12, y + 24);
+
+          for (let i = 0; i < CHARACTER_NAMES.length; i++) {
+            drawCell(activeRow, i, frame, y);
+          }
 
           ctx.font = '13px system-ui';
           ctx.textAlign = 'left';
-          ctx.fillText(rowInfo.label, 12, y + 20);
-
-          for (let i = 0; i < CHARACTER_NAMES.length; i++) {
-            drawCell(row, i, frame, y);
-          }
-
-          ctx.textAlign = 'left';
           ctx.fillText(rowInfo.sourceFrames
             ? `${rowInfo.sourceFrames[frame] + 1}コマ目 / ${rowInfo.frameLabels[frame]}`
-            : `${frame + 1} / ${rowInfo.frames}${rowInfo.frameLabels ? " · " + rowInfo.frameLabels[frame] : ""}`, 12, y + 45);
+            : `${frame + 1} / ${rowInfo.frames}${rowInfo.frameLabels ? " · " + rowInfo.frameLabels[frame] : ""}`, 12, y + 48);
+
+          ctx.font = '11px system-ui';
+          ctx.fillStyle = backgroundSelect.value === '#183b49' ? '#9ec7d3' : '#62818a';
+          ctx.fillText(`↑↓キーで動作切替 (${activeRow + 1}/${ACTION_ROWS.length})`, 12, y + 74);
+        } else {
+          for (let row = 0; row < ACTION_ROWS.length; row++) {
+            const y = 55 + row * 160;
+            const rowInfo = ACTION_ROWS[row];
+            const frame = playing ? activeFrames[row] : frozen[row];
+
+            ctx.font = '13px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText(rowInfo.label, 12, y + 20);
+
+            for (let i = 0; i < CHARACTER_NAMES.length; i++) {
+              drawCell(row, i, frame, y);
+            }
+
+            ctx.textAlign = 'left';
+            ctx.fillText(rowInfo.sourceFrames
+              ? `${rowInfo.sourceFrames[frame] + 1}コマ目 / ${rowInfo.frameLabels[frame]}`
+              : `${frame + 1} / ${rowInfo.frames}${rowInfo.frameLabels ? " · " + rowInfo.frameLabels[frame] : ""}`, 12, y + 45);
+          }
         }
 
         requestAnimationFrame(render);
-      }
-
-      // --- UI Enhancements: Keyboard Shortcuts & Row Navigation ---
-      const jumpRowSelect = document.querySelector('#jump-row');
-      if (jumpRowSelect) {
-        ACTION_ROWS.forEach((r, idx) => {
-          const opt = document.createElement('option');
-          opt.value = idx;
-          opt.textContent = `${idx + 1}. ${r.label}`;
-          jumpRowSelect.append(opt);
-        });
-
-        jumpRowSelect.addEventListener('change', () => {
-          const idx = Number(jumpRowSelect.value);
-          if (Number.isNaN(idx) || idx < 0) return;
-          const targetY = canvas.getBoundingClientRect().top + window.scrollY + 55 + idx * 160 - 120;
-          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-          jumpRowSelect.value = '';
-        });
       }
 
       window.addEventListener('keydown', e => {
@@ -364,6 +575,17 @@
         } else if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
           e.preventDefault();
           stepBackButton.click();
+        } else if (e.code === 'ArrowUp' || e.code === 'KeyW') {
+          e.preventDefault();
+          prevRow();
+        } else if (e.code === 'ArrowDown' || e.code === 'KeyS') {
+          e.preventDefault();
+          nextRow();
+        } else if (e.code >= 'Digit1' && e.code <= 'Digit9') {
+          const idx = Number(e.code.replace('Digit', '')) - 1;
+          if (idx < ACTION_ROWS.length) setRow(idx);
+        } else if (e.code === 'Digit0') {
+          setRow('all');
         } else if (e.code === 'KeyF') {
           flipCheckbox.checked = !flipCheckbox.checked;
         }

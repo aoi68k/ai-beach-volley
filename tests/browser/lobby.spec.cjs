@@ -278,6 +278,36 @@ test('human serves: hold, toss, timed jump attack and standing B serve', async (
   expect(errors).toEqual([]);
 });
 
+test('character preview: single row focus view, tab switching and zoom', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/character-preview.html');
+  await expect(page.locator('#load-status')).toContainText('全画像を読み込みました');
+
+  // Verify tabs exist
+  const tabs = page.locator('#action-tabs .tab-btn');
+  await expect(tabs).toHaveCount(10); // 9 actions + 1 all
+
+  // 1. Default is Idle (row 0)
+  await expect(tabs.nth(0)).toHaveClass(/active/);
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/preview-single-idle.png' });
+
+  // 2. Switch to Run (row 1)
+  await tabs.nth(1).click();
+  await expect(tabs.nth(1)).toHaveClass(/active/);
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/preview-single-run.png' });
+
+  // 3. Switch to Block (row 6) via keyboard Digit7
+  await page.keyboard.press('Digit7');
+  await expect(tabs.nth(6)).toHaveClass(/active/);
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/preview-single-block.png' });
+
+  // 4. Zoom 1.25x
+  await page.locator('#zoom').selectOption('1.25');
+  await page.screenshot({ path: 'C:/Users/aoi68/.gemini/antigravity/brain/2cf24b98-8335-489f-af1a-ba95899494ca/preview-single-zoom.png' });
+
+  expect(errors).toEqual([]);
+});
 test('buttons distinguish actionable, selected and disabled states', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
