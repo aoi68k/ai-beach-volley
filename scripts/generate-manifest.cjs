@@ -21,7 +21,7 @@ function scanAvatars() {
   const entries = fs.readdirSync(avatarsDir, { withFileTypes: true });
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
-    if (entry.name.startsWith('.')) continue;
+    if (entry.name.startsWith('.') || entry.name.startsWith('_')) continue;
 
     const folderName = entry.name;
     const folderPath = path.join(avatarsDir, folderName);

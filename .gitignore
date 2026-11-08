@@ -14,6 +14,8 @@ node_modules/
 assets/characters/back-dash*
 assets/characters/back-run-v1*
 assets/characters/toss-hit-v1*
+assets/avatars/_*
+avatars/_*
 
 # Test and coverage output
 /playwright-report/
