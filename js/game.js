@@ -3978,6 +3978,7 @@ window.rallyGame = {
     if (ball && props) Object.assign(ball, props);
   },
   characterCheckActive() { return characterCheck; },
+  isRunning() { return running; },
   getCheckMode() { return checkMode; },
   setCheckMode(targetMode) { setCheckMode(targetMode); },
   startCharacterCheck(targetMode) { startCharacterCheck(targetMode); },

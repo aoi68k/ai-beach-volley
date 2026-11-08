@@ -1804,6 +1804,7 @@ test('fullscreen arena on mobile defers scroll lock until gameplay, allows dialo
 
 test('gamepad only navigation: detects controller, shows A/B badges, navigates lobby with D-pad, and launches match', async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(() => window.matchLobby);
 
   // 1. Initially without controller: badges are hidden
   const startBadge = page.locator('#start-gamepad-badge');
@@ -1993,5 +1994,42 @@ test('avatar selection toggles avatars and updates character portraits', async (
   // Check that game canvas is running cleanly with custom avatar
   const isRunning = await page.evaluate(() => !window.game?.paused);
   expect(isRunning).toBe(true);
+});
+
+test('pressing A button during character check does not open player setup lobby', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.matchLobby);
+
+  // 1. Launch character check
+  await page.locator('#character-check').click();
+  await expect(page.locator('#overlay')).toBeHidden();
+  await expect(page.locator('#lobby')).toBeHidden();
+
+  // 2. Enable gamepad detection
+  await page.evaluate(() => {
+    window.matchLobby.setGamepadDetected(true);
+  });
+
+  // 3. Simulate gamepad A button press via navigator.getGamepads mock
+  await page.evaluate(() => {
+    const mockPad = {
+      connected: true,
+      buttons: [
+        { pressed: true, value: 1.0 }, // A button
+        { pressed: false, value: 0 },
+        { pressed: false, value: 0 }
+      ],
+      axes: [0, 0]
+    };
+    navigator.getGamepads = () => [mockPad];
+  });
+
+  // Wait a short moment for gamepad navigation loop to run
+  await page.waitForTimeout(300);
+
+  // 4. Verify lobby dialog is still completely closed
+  const isLobbyOpen = await page.evaluate(() => Boolean(document.getElementById('lobby')?.open));
+  expect(isLobbyOpen).toBe(false);
+  await expect(page.locator('#lobby')).toBeHidden();
 });
 

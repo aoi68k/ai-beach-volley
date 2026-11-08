@@ -612,9 +612,12 @@
     const lobbyEl = $('lobby');
     const isLobbyOpen = lobbyEl && lobbyEl.open;
     const isConfigOpen = $('gamepad-config')?.open;
+    const overlayEl = $('overlay');
+    const isOverlayOpen = overlayEl && !overlayEl.classList.contains('hidden') && !overlayEl.hidden;
+    const isGameActive = Boolean(playing || game?.characterCheckActive?.() || game?.isRunning?.());
 
-    // When lobby is not open, A button opens PLAYER SETUP
-    if (!isLobbyOpen && !isConfigOpen && !playing) {
+    // When lobby is not open and we are on the initial welcome overlay, A button opens PLAYER SETUP
+    if (!isLobbyOpen && !isConfigOpen && isOverlayOpen && !isGameActive) {
       if (aPressed) {
         $('start')?.click();
       }
@@ -622,7 +625,10 @@
       return;
     }
 
-    if (isLobbyOpen && !isConfigOpen) {
+    if (!isLobbyOpen || isConfigOpen) {
+      lastGamepadNav = current;
+      return;
+    }
       if (bPressed) {
         $('close-lobby')?.click();
         lastGamepadNav = current;
