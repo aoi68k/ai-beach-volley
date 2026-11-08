@@ -3979,6 +3979,7 @@ window.rallyGame = {
   },
   characterCheckActive() { return characterCheck; },
   isRunning() { return running; },
+  hasWinner() { return Boolean(winner); },
   getCheckMode() { return checkMode; },
   setCheckMode(targetMode) { setCheckMode(targetMode); },
   startCharacterCheck(targetMode) { startCharacterCheck(targetMode); },

@@ -2033,3 +2033,49 @@ test('pressing A button during character check does not open player setup lobby'
   await expect(page.locator('#lobby')).toBeHidden();
 });
 
+test('gamepad A button on post-match victory overlay triggers PLAY AGAIN and opens player setup', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.matchLobby);
+
+  // 1. Enable gamepad detection
+  await page.evaluate(() => {
+    window.matchLobby.setGamepadDetected(true);
+  });
+
+  // 2. Open lobby and launch match
+  await page.locator('#start').click();
+  await expect(page.locator('#lobby')).toBeVisible();
+  await page.locator('#launch-match').click();
+  await expect(page.locator('#overlay')).toBeHidden();
+
+  // 3. Trigger match victory state (PLAY AGAIN overlay)
+  await page.evaluate(() => {
+    const s = window.rallyGame.snapshot();
+    Object.assign(s, { score: [11, 7], winner: false, pointEnd: { side: 0, time: 0 }, serveTimer: 0, running: true });
+    window.rallyGame.apply(s);
+  });
+  await expect(page.locator('#overlay')).toBeVisible();
+  await expect(page.locator('#overlay')).toHaveClass(/is-victory/);
+  await expect(page.locator('#start-label')).toContainText('PLAY AGAIN');
+
+  // 4. Simulate gamepad A button press
+  await page.evaluate(() => {
+    const mockPad = {
+      connected: true,
+      buttons: [
+        { pressed: true, value: 1.0 }, // A button
+        { pressed: false, value: 0 },
+        { pressed: false, value: 0 }
+      ],
+      axes: [0, 0]
+    };
+    navigator.getGamepads = () => [mockPad];
+  });
+
+  // 5. Verify PLAYER SETUP lobby dialog opens and receives focus
+  await expect(page.locator('#lobby')).toBeVisible();
+  await expect(page.locator('#lobby')).toHaveAttribute('open', '');
+  await expect(page.locator('#launch-match')).toHaveClass(/gamepad-focused/);
+});
+
+

@@ -586,6 +586,7 @@
       if (pad.buttons?.[0]?.pressed || pad.buttons?.[0]?.value > 0.5) a = true;
       if (pad.buttons?.[1]?.pressed || pad.buttons?.[1]?.value > 0.5) b = true;
       if (pad.buttons?.[2]?.pressed || pad.buttons?.[2]?.value > 0.5) a = true;
+      if (pad.buttons?.[9]?.pressed || pad.buttons?.[9]?.value > 0.5) a = true; // Start / Options button
 
       if (pad.buttons?.[12]?.pressed || pad.buttons?.[12]?.value > 0.5) up = true;
       if (pad.buttons?.[13]?.pressed || pad.buttons?.[13]?.value > 0.5) down = true;
@@ -614,11 +615,13 @@
     const isConfigOpen = $('gamepad-config')?.open;
     const overlayEl = $('overlay');
     const isOverlayOpen = overlayEl && !overlayEl.classList.contains('hidden') && !overlayEl.hidden;
-    const isGameActive = Boolean(playing || game?.characterCheckActive?.() || game?.isRunning?.());
+    const isVictoryOverlay = Boolean(isOverlayOpen && (overlayEl.classList.contains('is-victory') || game?.hasWinner?.()));
+    const isCharacterCheck = Boolean(game?.characterCheckActive?.());
+    const isMatchInProgress = Boolean(playing && game?.isRunning?.() && !isVictoryOverlay);
 
-    // When lobby is not open and we are on the initial welcome overlay, A button opens PLAYER SETUP
-    if (!isLobbyOpen && !isConfigOpen && isOverlayOpen && !isGameActive) {
-      if (aPressed) {
+    // Overlay screen navigation (welcome screen or post-match victory/play again screen)
+    if (!isLobbyOpen && !isConfigOpen && isOverlayOpen && !isCharacterCheck && !isMatchInProgress) {
+      if (aPressed || (isVictoryOverlay && bPressed)) {
         $('start')?.click();
       }
       lastGamepadNav = current;
